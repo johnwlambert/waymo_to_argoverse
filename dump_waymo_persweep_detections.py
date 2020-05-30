@@ -47,6 +47,9 @@ def main(verbose=False):
 			shard_fpaths = glob.glob(f'{SHARD_DIR}/{split}/detection_3d_{classname}*{split}_shard*.json')
 			shard_fpaths.sort()
 			for shard_fpath in shard_fpaths:
+
+				timestamp_to_det_dict = defaultdict(list)
+
 				print(f'\t\t{Path(shard_fpath).stem}')
 				shard_data = read_json_file(shard_fpath)
 				for i, det in enumerate(shard_data):
