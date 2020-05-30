@@ -42,31 +42,41 @@ def main(verbose=False):
 		print(split)
 		for classname in ['cyclist','pedestrian','vehicle']:
 			print(f'\t{classname}')
-			timestamps_counts = defaultdict(int)
-
+			
 			shard_fpaths = glob.glob(f'{SHARD_DIR}/{split}/detection_3d_{classname}*{split}_shard*.json')
 			shard_fpaths.sort()
 			for shard_fpath in shard_fpaths:
 
-				timestamp_to_det_dict = defaultdict(list)
-
+				log_to_timestamp_to_dets_dict = defaultdict(dict)
 				print(f'\t\t{Path(shard_fpath).stem}')
 				shard_data = read_json_file(shard_fpath)
 				for i, det in enumerate(shard_data):
-					tracked_labels = []
+					if i % 100000 == 0:
+						print(f'On {i}/{len(shard_data)}')
 					timestamp = det['timestamp']
-					timestamps_counts[timestamp] += 1
 					log_id = det['context_name']
-					tracked_labels += [det]
+					if log_id not in log_to_timestamp_to_dets_dict:
+						log_to_timestamp_to_dets_dict[log_id] = defaultdict(list)
 
-					sweep_json_fpath = f'{DATAROOT}/{log_id}/per_sweep_annotations/tracked_object_labels_{timestamp}.json'
-					if Path(sweep_json_fpath).exists():
-						# accumulate tracks of another class together
-						prev_tracked_labels = read_json_file(sweep_json_fpath)
-						tracked_labels.extend(prev_tracked_labels)
+					log_to_timestamp_to_dets_dict[log_id][timestamp].append(det)
+		
+				for log_id, timestamp_to_dets_dict in log_to_timestamp_to_dets_dict.items():
+					print(log_id)
+					for timestamp, dets in timestamp_to_dets_dict.items():
+						sweep_json_fpath = f'{DATAROOT}/{log_id}/per_sweep_annotations/tracked_object_labels_{timestamp}.json'
+						dummy_lidar_fpath = f'{DATAROOT}/{log_id}/lidar/PC_{timestamp}.ply'
+						
+						if Path(sweep_json_fpath).exists():
+							# accumulate tracks of another class together
+							prev_dets = read_json_file(sweep_json_fpath)
+							dets.extend(prev_dets)
 
-					check_mkdir(str(Path(sweep_json_fpath).parent))
-					save_json_dict(sweep_json_fpath, tracked_labels)
+						check_mkdir(str(Path(sweep_json_fpath).parent))
+						save_json_dict(sweep_json_fpath, dets)
+
+						check_mkdir(str(Path(dummy_lidar_fpath).parent))
+						save_json_dict(dummy_lidar_fpath, {})
+
 
 			if verbose:
 				print('Shared timestamps:')

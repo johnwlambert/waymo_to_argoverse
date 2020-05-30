@@ -280,7 +280,7 @@ def main():
 			# Frame start time, which is the timestamp of the first top lidar spin
 			# within this frame, in microseconds
 			timestamp_ms = frame.timestamp_micros
-			timestamp_ns = timestamp_ms * 1000 # to nanoseconds
+			timestamp_ns = int(timestamp_ms * 1000) # to nanoseconds
 			SE3_flattened = np.array(frame.pose.transform)
 			city_SE3_egovehicle = SE3_flattened.reshape(4,4)
 			if save_poses:
@@ -309,7 +309,7 @@ def main():
 
 				# microseconds
 				timestamp_ms =  tf_cam_image.pose_timestamp
-				timestamp_ns = timestamp_ms * 1000 # to nanoseconds
+				timestamp_ns = int(timestamp_ms * 1000) # to nanoseconds
 				# tf_cam_image.shutter
 				# tf_cam_image.camera_trigger_time
 				# tf_cam_image.camera_readout_done_time
