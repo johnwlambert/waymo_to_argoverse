@@ -117,10 +117,12 @@ bin_fnames = [
 	'detection_3d_vehicle_detection_test.bin',
 	'detection_3d_vehicle_detection_validation.bin',
 ]
+SHARD_SZ = 500000
 for bin_fname in bin_fnames:
 	print(bin_fname)
 	bin_fpath = f'{DRIVE_DIR}/{bin_fname}'
-	json_fpath = f'{DRIVE_DIR}/{Path(bin_fname).stem}.json'
+	shard_counter = 0
+	json_fpath = f'{DRIVE_DIR}/{Path(bin_fname).stem}_shard_{shard_counter}.json'
 
 	objects = metrics_pb2.Objects()
 
@@ -136,8 +138,12 @@ for bin_fname in bin_fnames:
 		'CYCLIST', # 4
 	]
 
+	gt_num_objs = len(objects.objects)
+	print(f'num_objs={gt_num_objs}')
 	tracked_labels = []
 	for i, object in enumerate(objects.objects):
+		if i % 50000 == 0:
+			print(f'On {i}/{len(objects.objects)}')
 		height = object.object.box.height
 		width = object.object.box.width
 		length = object.object.box.length
@@ -162,6 +168,12 @@ for bin_fname in bin_fnames:
 			"score":  object.score, # float in [0,1]
 			"context_name": object.context_name,
 		})
+		if len(tracked_labels) >= SHARD_SZ:
+			save_json_dict(json_fpath, tracked_labels)
+			tracked_labels = []
+			shard_counter += 1
+			json_fpath = f'{DRIVE_DIR}/{Path(bin_fname).stem}_shard_{shard_counter}.json'
+
 		# label_dir = os.path.join(tracks_dump_dir, log_id, "per_sweep_annotations_amodal")    
 		# check_mkdir(label_dir)
 		# json_fname = f"tracked_object_labels_{current_lidar_timestamp}.json"
@@ -172,7 +184,14 @@ for bin_fname in bin_fnames:
 		# 	prev_tracked_labels = read_json_file(json_fpath)
 		# 	tracked_labels.extend(prev_tracked_labels)
 
+	# ensure sharding correct
+	print(f'Shard sz, {SHARD_SZ}, num_objs={gt_num_objs}')
+	print(f'shard_counter={shard_counter}, len_tracked_labels{len(tracked_labels)}')
+	assert gt_num_objs // SHARD_SZ == shard_counter 
+	assert gt_num_objs % SHARD_SZ == len(tracked_labels)
+
 	save_json_dict(json_fpath, tracked_labels)
 
+# if too big, shard into pieces when exceed 500000 objects, reset a counter
 
 
