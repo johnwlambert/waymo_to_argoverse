@@ -36,7 +36,8 @@ def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[
 
 def main(verbose=False):
 	""" """
-	DATAROOT = '/Users/johnlamb/Downloads/waymo_logs'
+	DETS_DATAROOT = '/Users/johnlamb/Downloads/waymo_logs_dets'
+	RAW_DATAROOT = '/Users/johnlamb/Downloads/waymo_logs_raw_data'
 	SHARD_DIR = '/Users/johnlamb/Downloads/waymo_pointpillars_detections'
 	for split in ['validation', 'test']:
 		print(split)
@@ -53,18 +54,19 @@ def main(verbose=False):
 				for i, det in enumerate(shard_data):
 					if i % 100000 == 0:
 						print(f'On {i}/{len(shard_data)}')
-					timestamp = det['timestamp']
+					timestamp_ms = det['timestamp']
+					timestamp_ns = int(1000 * timestamp_ms)
 					log_id = det['context_name']
 					if log_id not in log_to_timestamp_to_dets_dict:
 						log_to_timestamp_to_dets_dict[log_id] = defaultdict(list)
 
-					log_to_timestamp_to_dets_dict[log_id][timestamp].append(det)
+					log_to_timestamp_to_dets_dict[log_id][timestamp_ns].append(det)
 		
 				for log_id, timestamp_to_dets_dict in log_to_timestamp_to_dets_dict.items():
 					print(log_id)
-					for timestamp, dets in timestamp_to_dets_dict.items():
-						sweep_json_fpath = f'{DATAROOT}/{log_id}/per_sweep_annotations/tracked_object_labels_{timestamp}.json'
-						dummy_lidar_fpath = f'{DATAROOT}/{log_id}/lidar/PC_{timestamp}.ply'
+					for timestamp_ns, dets in timestamp_to_dets_dict.items():
+						sweep_json_fpath = f'{DETS_DATAROOT}/{log_id}/per_sweep_annotations/tracked_object_labels_{timestamp_ns}.json'
+						dummy_lidar_fpath = f'{RAW_DATAROOT}/{log_id}/lidar/PC_{timestamp_ns}.ply'
 						
 						if Path(sweep_json_fpath).exists():
 							# accumulate tracks of another class together

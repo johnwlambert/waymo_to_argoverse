@@ -259,8 +259,9 @@ def main():
 		'272435602399417322_2884_130_2904_130'
 	]
 
-	save_images = False
-	save_poses = False
+	save_images = True
+	save_poses = True
+	save_calibration = False
 
 	img_count = 0
 	for log_id in log_ids:
@@ -286,18 +287,16 @@ def main():
 			if save_poses:
 				dump_pose(city_SE3_egovehicle, timestamp_ns, log_id)
 
-			
-			calib_json = form_calibration_json(frame.context.camera_calibrations)
-			if log_calib_json is None:
-				log_calib_json = calib_json
+			if save_calibration:
+				calib_json = form_calibration_json(frame.context.camera_calibrations)
+				if log_calib_json is None:
+					log_calib_json = calib_json
 
-				calib_json_fpath = f'pose_logs/{log_id}/vehicle_calibration_info.json'
-				check_mkdir(str(Path(calib_json_fpath).parent))
-				save_json_dict(calib_json_fpath, calib_json)
-
-			else:
-				# pdb.set_trace()
-				assert calib_json == log_calib_json	
+					calib_json_fpath = f'pose_logs/{log_id}/vehicle_calibration_info.json'
+					check_mkdir(str(Path(calib_json_fpath).parent))
+					save_json_dict(calib_json_fpath, calib_json)
+				else:
+					assert calib_json == log_calib_json	
 
 			# 5 images per frame
 			for index, tf_cam_image in enumerate(frame.images):
@@ -307,9 +306,9 @@ def main():
 				SE3_flattened = np.array(tf_cam_image.pose.transform)
 				city_SE3_egovehicle = SE3_flattened.reshape(4,4)
 
-				# microseconds
-				timestamp_ms =  tf_cam_image.pose_timestamp
-				timestamp_ns = int(timestamp_ms * 1000) # to nanoseconds
+				# in seconds
+				timestamp_s =  tf_cam_image.pose_timestamp
+				timestamp_ns = int(timestamp_s * 1e9) # to nanoseconds
 				# tf_cam_image.shutter
 				# tf_cam_image.camera_trigger_time
 				# tf_cam_image.camera_readout_done_time
