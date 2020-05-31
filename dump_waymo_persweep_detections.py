@@ -50,8 +50,6 @@ def quat2rotmat(q: np.ndarray) -> np.ndarray:
     return Rotation.from_quat(q_scipy).as_dcm()
 
 
-
-
 def round_to_micros(t_nanos, base=1000):
     """
     Round nanosecond timestamp to nearest microsecond timestamp
