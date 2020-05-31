@@ -2,16 +2,18 @@
 
 """ generate a file that contains serialized Objects proto."""
 
+import glob
 import json
 import numpy as np
 import os
+from pathlib import Path
 import pdb
 from scipy.spatial.transform import Rotation
 from typing import Any, Dict, Union, Tuple
 
-# from waymo_open_dataset import dataset_pb2
-# from waymo_open_dataset import label_pb2
-# from waymo_open_dataset.protos import metrics_pb2
+from waymo_open_dataset import dataset_pb2
+from waymo_open_dataset import label_pb2
+from waymo_open_dataset.protos import metrics_pb2
 
 
 OBJECT_TYPES = [
@@ -82,33 +84,34 @@ def read_json_file(fpath: Union[str, "os.PathLike[str]"]) -> Any:
 		return json.load(f)
 
 
-def _create_pd_file_example():
+def create_submission():
 	"""Creates a prediction objects file."""
 	objects = metrics_pb2.Objects()
 
+	#TRACKER_OUTPUT_DATAROOT = '/Users/johnlamb/Downloads/WAYMO_VAL_TESTCASE/validation'
+	TRACKER_OUTPUT_DATAROOT = '/export/share/Datasets/MSegV12/w_o_d/ab3dmot_tracks_conf0.2/val-split-track-preds-maxage15-minhits5-conf0.2'
 	val_log_ids = get_val_log_ids()
+	val_log_ids = ['10868756386479184868_3000_000_3020_000']
 
 	# loop over the logs in the split
 	for log_id in val_log_ids:
 		# get all the per_sweep_annotations_amodal files
-		json_fpaths = glob.glob(f'{log_id}/per_sweep_annotations_amodal/*.json')
+		json_fpaths = glob.glob(f'{TRACKER_OUTPUT_DATAROOT}/{log_id}/per_sweep_annotations_amodal/*.json')
 		# for each per_sweep_annotation file
 		for json_fpath in json_fpaths:
-			pdb.set_trace()
-			timestamp_ns = ''
+			timestamp_ns = int(Path(json_fpath).stem.split('_')[-1])
 			timestamp_objs = read_json_file(json_fpath)
 			# loop over all objects
 			for obj_json in timestamp_objs:
-				create_object_description(log_id, timestamp_ns, obj_json)
-
-	objects.objects.append(o)
+				o = create_object_description(log_id, timestamp_ns, obj_json)
+				objects.objects.append(o)
 
 	# Add more objects. Note that a reasonable detector should limit its maximum
 	# number of boxes predicted per frame. A reasonable value is around 400. A
 	# huge number of boxes can slow down metrics computation.
 
 	# Write objects to a file.
-	f = open('/export/share/Datasets/MSegV12/w_o_d/val_preds_v1.bin', 'wb')
+	f = open('/export/share/Datasets/MSegV12/w_o_d/val_preds_v1_dummy.bin', 'wb')
 	f.write(objects.SerializeToString())
 	f.close()
 
@@ -160,6 +163,7 @@ def create_object_description(log_id, timestamp_ns, obj_json):
 
 	# Use correct type.
 	o.object.type = obj_type
+	return o
 
 
 def get_val_log_ids():
@@ -528,7 +532,7 @@ def get_test_log_ids():
 
 
 if __name__ == '__main__':
-	# create_pd_file_example()
-	test_quaternion3d_to_yaw()
+	create_submission()
+	#test_quaternion3d_to_yaw()
 
 

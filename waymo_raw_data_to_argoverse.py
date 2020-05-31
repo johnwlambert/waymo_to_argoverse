@@ -71,14 +71,15 @@ def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[
 
 def main():
 	""" """
-	TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/VAL_TFRECORDS'
+	# TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/VAL_TFRECORDS'
+	TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/TEST_TFRECORDS'
 
 	val_log_ids = get_val_log_ids()
 	test_log_ids = get_test_log_ids()
 
 	save_images = False
-	save_poses = False
-	save_calibration = True
+	save_poses = True
+	save_calibration = False
 
 	img_count = 0
 	for log_id in test_log_ids:
@@ -109,7 +110,7 @@ def main():
 				if log_calib_json is None:
 					log_calib_json = calib_json
 
-					calib_json_fpath = f'pose_logs/{log_id}/vehicle_calibration_info.json'
+					calib_json_fpath = f'TEST_RAW_DATA/pose_logs/{log_id}/vehicle_calibration_info.json'
 					check_mkdir(str(Path(calib_json_fpath).parent))
 					save_json_dict(calib_json_fpath, calib_json)
 				else:
@@ -135,7 +136,7 @@ def main():
 				if save_images:
 					camera_name = CAMERA_NAMES[tf_cam_image.name]
 					img = tf.image.decode_jpeg(tf_cam_image.image)
-					img_save_fpath = f'logs/{log_id}/{camera_name}/{camera_name}_{timestamp_ns}.jpg'
+					img_save_fpath = f'TEST_RAW_DATA/logs/{log_id}/{camera_name}/{camera_name}_{timestamp_ns}.jpg'
 					assert not Path(img_save_fpath).exists()
 					check_mkdir(str(Path(img_save_fpath).parent))
 					imageio.imwrite(img_save_fpath, img)
@@ -211,7 +212,7 @@ def dump_pose(city_SE3_egovehicle, timestamp, log_id):
 		'rotation': [w, x, y, z],
 		'translation': [x,y,z]
 	}
-	json_fpath = f'pose_logs/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json'
+	json_fpath = f'TEST_RAW_DATA/pose_logs/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json'
 	check_mkdir(str(Path(json_fpath).parent))
 	save_json_dict(json_fpath, pose_dict)
 

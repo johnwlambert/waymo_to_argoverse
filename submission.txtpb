@@ -12,7 +12,7 @@ authors: ""
 affiliation: "Georgia Tech"
 description: "Simple filter on PointPillars PPBA"
 
-method_link: "https://github.com/johnwlambert/waymo_to_argoverse_converter"
+method_link: "https://github.com/waymo-to-argoverse/waymo-to-argoverse"
 
 # See submission.proto for allowed types.
 sensor_type: LIDAR_ALL
