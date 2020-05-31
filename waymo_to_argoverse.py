@@ -39,6 +39,7 @@ fpath = '/mnt/beegfs/tier2/shared/Datasets/MSegV12/w_o_d/detection_3d_vehicle_de
 
 """
 Example Object:
+https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto
 
 object {
   box {
@@ -83,6 +84,25 @@ from typing import Any, Dict, Union
 from pathlib import Path
 from typing import Tuple
 from scipy.spatial.transform import Rotation
+
+
+def round_to_micros(t_nanos, base=1000):
+    """
+    Round nanosecond timestamp to nearest microsecond timestamp
+    """
+    return base * round(t_nanos/base)
+
+
+def test_round_to_micros():
+    """
+    test_round_to_micros()
+    """
+    t_nanos  = 1508103378165379072
+    t_micros = 1508103378165379000
+
+    assert t_micros == round_to_micros(t_nanos, base=1000)
+
+
 
 def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[Any, Any]) -> None:
     """Save a Python dictionary to a JSON file.
@@ -151,18 +171,22 @@ for bin_fname in bin_fnames:
 		x = object.object.box.center_x
 		y = object.object.box.center_y
 		z = object.object.box.center_z
-		ego_yaw_obj = object.object.box.heading
 
-		qx,qy,qz,qw = yaw_to_quaternion3d(ego_yaw_obj)
+		# Waymo provides SE(3) transformation from egohicle->labeled_object,
+		# unlike Argoverse, which provides the inverse
+		obj_yaw_ego = object.object.box.heading
+
+		qx,qy,qz,qw = yaw_to_quaternion3d(obj_yaw_ego)
 		label_class = OBJECT_TYPES[object.object.type]
-
+		
 		tracked_labels.append({
-			"center": {"x": -x, "y": -y, "z": -z},
+			"center": {"x": x, "y": y, "z": z},
 			"rotation": {"x": qx , "y": qy, "z": qz , "w": qw},
 			"length": length,
 			"width": width,
 			"height": height,
 			"track_label_uuid": None,
+			# TODO: write as int(nanoseconds) instead.
 			"timestamp": object.frame_timestamp_micros, # 1522688014970187
 			"label_class": label_class,
 			"score":  object.score, # float in [0,1]

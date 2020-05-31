@@ -3,10 +3,72 @@
 from collections import defaultdict
 import glob
 import json
+import math
+import numpy as np
 import os
 from pathlib import Path
 import pdb
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Tuple
+
+from scipy.spatial.transform import Rotation
+from argoverse.utils.se3 import SE3
+
+
+def yaw_to_quaternion3d(yaw: float) -> Tuple[float,float,float,float]:
+	"""
+	Args:
+	-   yaw: rotation about the z-axis
+	Returns:
+	-   qx,qy,qz,qw: quaternion coefficients
+	"""
+	qx,qy,qz,qw = Rotation.from_euler('z', yaw).as_quat()
+	return qx,qy,qz,qw
+
+
+def rotmat2quat(R: np.ndarray) -> np.ndarray:
+	""" """
+	q_scipy = Rotation.from_dcm(R).as_quat()
+	x, y, z, w = q_scipy
+	q_argo = w, x, y, z
+	return q_argo
+
+
+def quat2rotmat(q: np.ndarray) -> np.ndarray:
+    """Convert a unit-length quaternion into a rotation matrix.
+    Note that libraries such as Scipy expect a quaternion in scalar-last [x, y, z, w] format,
+    whereas at Argo we work with scalar-first [w, x, y, z] format, so we convert between the
+    two formats here. We use the [w, x, y, z] order because this corresponds to the
+    multidimensional complex number `w + ix + jy + kz`.
+    Args:
+        q: Array of shape (4,) representing (w, x, y, z) coordinates
+    Returns:
+        R: Array of shape (3, 3) representing a rotation matrix.
+    """
+    assert np.isclose(np.linalg.norm(q), 1.0, atol=1e-12)
+    w, x, y, z = q
+    q_scipy = np.array([x, y, z, w])
+    return Rotation.from_quat(q_scipy).as_dcm()
+
+
+
+
+def round_to_micros(t_nanos, base=1000):
+    """
+    Round nanosecond timestamp to nearest microsecond timestamp
+    """
+    return base * round(t_nanos/base)
+
+
+def test_round_to_micros():
+    """
+    test_round_to_micros()
+    """
+    t_nanos  = 1508103378165379072
+    t_micros = 1508103378165379000
+
+    assert t_micros == round_to_micros(t_nanos, base=1000)
+
+
 
 def check_mkdir(dirpath):
 	""" """
@@ -52,11 +114,48 @@ def main(verbose=False):
 				print(f'\t\t{Path(shard_fpath).stem}')
 				shard_data = read_json_file(shard_fpath)
 				for i, det in enumerate(shard_data):
+
+					log_id = det['context_name']
+
+					# if log_id != '10868756386479184868_3000_000_3020_000': # '9584760613582366524_1620_000_1640_000':# '9584760613582366524_1620_000_1640_000': # '11450298750351730790_1431_750_1451_750':
+					# 	continue
+
+					det['center']['x'] *= -1
+					det['center']['y'] *= -1
+					det['center']['z'] *= -1
+
+					# egovehicle_t_obj = np.array([tx,ty,tz])
+
+					# qx = det['rotation']['x']
+					# qy = det['rotation']['y']
+					# qz = det['rotation']['z']
+					# qw = det['rotation']['w']
+
+					# q = np.array([qw, qx, qy, qz])
+					# egovehicle_R_obj = quat2rotmat(q)
+					# egovehicle_SE3_obj = SE3(rotation=egovehicle_R_obj, translation=egovehicle_t_obj)
+
+					# egovehicle_R_obj = egovehicle_SE3_obj.rotation
+					# egovehicle_q_obj = rotmat2quat(egovehicle_R_obj)
+					# qw, qx, qy, qz = egovehicle_q_obj
+
+					# ego_t_obj = egovehicle_SE3_obj.translation
+					# x, y, z = ego_t_obj
+
+					# det['center']['x'] = tx
+					# det['center']['y'] = ty
+					# det['center']['z'] = tz
+					# det['rotation']['x'] = qx
+					# det['rotation']['y'] = qy
+					# det['rotation']['z'] = qz
+					# det['rotation']['w'] = qw
+
 					if i % 100000 == 0:
 						print(f'On {i}/{len(shard_data)}')
 					timestamp_ms = det['timestamp']
 					timestamp_ns = int(1000 * timestamp_ms)
-					log_id = det['context_name']
+
+
 					if log_id not in log_to_timestamp_to_dets_dict:
 						log_to_timestamp_to_dets_dict[log_id] = defaultdict(list)
 
@@ -85,7 +184,49 @@ def main(verbose=False):
 				print(timestamps_counts)
 
 
+def rotMatZ_3D(yaw):
+	"""
+	Args:
+	-   tz
+	Returns:
+	-   rot_z
+	"""
+	c = np.cos(yaw)
+	s = np.sin(yaw)
+	rot_z = np.array(
+	[
+	[   c,-s, 0],
+	[   s, c, 0],
+	[   0, 0, 1 ]
+	])
+	return rot_z
+
+
+def test_transform():
+	""" """
+	yaw = 90
+	for yaw in np.random.randn(10) * 360:
+		R = rotMatZ_3D(yaw)
+		w, x, y, z = rotmat2quat(R)
+		qx,qy,qz,qw = yaw_to_quaternion3d(yaw)
+
+		print(w, qw)
+		print(x, qx)
+		print(y, qy)
+		print(z, qz)
+		assert np.allclose(w, qw)
+		assert np.allclose(x, qx)
+		assert np.allclose(y, qy)
+		assert np.allclose(z, qz)
+
 
 
 if __name__ == '__main__':
+
+	#test_transform()
 	main()
+
+
+
+
+

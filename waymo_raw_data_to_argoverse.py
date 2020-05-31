@@ -28,6 +28,7 @@ https://arxiv.org/pdf/1912.04838.pdf
 
 from scipy.spatial.transform import Rotation
 
+
 CAMERA_NAMES = [
     'unknown', # 0, 'UNKNOWN',
     'ring_front_center', # 1, 'FRONT'
@@ -36,6 +37,23 @@ CAMERA_NAMES = [
     'ring_side_left', # 4, 'SIDE_LEFT',
     'ring_side_right', # 5, 'SIDE_RIGHT'
 ]
+
+def round_to_micros(t_nanos, base=1000):
+    """
+    Round nanosecond timestamp to nearest microsecond timestamp
+    """
+    return base * round(t_nanos/base)
+
+
+def test_round_to_micros():
+    """
+    test_round_to_micros()
+    """
+    t_nanos  = 1508103378165379072
+    t_micros = 1508103378165379000
+
+    assert t_micros == round_to_micros(t_nanos, base=1000)
+
 
 def check_mkdir(dirpath):
 	""" """
@@ -341,19 +359,26 @@ RING_IMAGE_SIZES = {
 }
 
 def form_calibration_json(calib_data):
-	""" """
+	"""
+	Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
+		rotation parameterized as quaternion.
+	Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
+	"""
 	calib_dict = {
 		'camera_data_': []
 	}
 	for camera_calib in calib_data:
 
 		cam_name = CAMERA_NAMES[camera_calib.name]
-		city_SE3_egovehicle = np.array(camera_calib.extrinsic.transform).reshape(4,4)
-		x,y,z = city_SE3_egovehicle[:3,3]
-		R = city_SE3_egovehicle[:3,:3]
-		assert np.allclose( city_SE3_egovehicle[3], np.array([0,0,0,1]) )
-		q = rotmat2quat(R)
-		qw, qx, qy, qz = q
+		# They provide "Camera frame to vehicle frame."
+		# https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
+		egovehicle_SE3_camera = np.array(camera_calib.extrinsic.transform).reshape(4,4)
+		x, y, z = egovehicle_SE3_camera[:3,3]
+		egovehicle_R_camera = egovehicle_SE3_camera[:3,:3]
+
+		assert np.allclose( egovehicle_SE3_camera[3], np.array([0,0,0,1]) )
+		egovehicle_q_camera = rotmat2quat(egovehicle_R_camera)
+		qw, qx, qy, qz = egovehicle_q_camera
 		f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
 
 		cam_dict = {
