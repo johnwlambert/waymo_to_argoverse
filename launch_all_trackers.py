@@ -4,21 +4,32 @@
 from mseg_semantic.utils.subprocess_utils import run_command
 
 
+from mseg_semantic.utils.subprocess_utils import run_command
+
+
 def launch_all_trackers():
-
-	split = 'val'
+	""" """
+	split = 'test' #'val'
 	dets_dataroot = '/export/share/Datasets/MSegV12/w_o_d/detections'
-	min_conf = 0.3
-	tracks_dump_dir = f'/export/share/Datasets/MSegV12/w_o_d/ab3dmot_tracks_conf{min_conf}_complete_sharded_val'
 
-	val_log_ids = get_val_log_ids()
-	for log_id in val_log_ids:
-		pose_dir = f'/export/share/Datasets/MSegV12/w_o_d/VAL_RAW_DATA_SHARDED/sharded_pose_logs/val_{log_id}'
 
-		cmd = f'sbatch -p cpu -c 3'
-		cmd += f' run_tracker.sh {split} {dets_dataroot} {pose_dir} {tracks_dump_dir} {min_conf}'
-		print(cmd)
-		run_command(cmd)
+	#min_conf = 0.3
+	for min_hits in [3,4]:
+		for min_conf in [ 0.41, 0.42, 0.43, 0.44, 0.46, 0.47, 0.48, 0.49, 0.51, 0.52, 0.53, 0.54 ]:
+			tracks_dump_dir = f'/export/share/Datasets/MSegV12/w_o_d/ab3dmot_tracks_conf{min_conf}_complete_sharded_{split}'
+			
+			if split == 'val':
+				log_ids = get_val_log_ids()
+			elif split == 'test':
+				log_ids = get_test_log_ids()
+			
+			for log_id in log_ids:
+				pose_dir = f'/export/share/Datasets/MSegV12/w_o_d/{split.upper()}_RAW_DATA_SHARDED/sharded_pose_logs/{split}_{log_id}'
+
+				cmd = f'sbatch -p cpu -c 2'
+				cmd += f' run_tracker.sh {split} {dets_dataroot} {pose_dir} {tracks_dump_dir} {min_conf} {min_hits}'
+				print(cmd)
+				run_command(cmd)
 
 
 def get_val_log_ids():
