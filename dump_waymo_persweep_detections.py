@@ -117,38 +117,16 @@ def main(verbose=False):
 
 					log_id = det['context_name']
 
-					# if log_id != '10868756386479184868_3000_000_3020_000': # '9584760613582366524_1620_000_1640_000':# '9584760613582366524_1620_000_1640_000': # '11450298750351730790_1431_750_1451_750':
-					# 	continue
+					if log_id not in [
+						'10868756386479184868_3000_000_3020_000',
+						'9584760613582366524_1620_000_1640_000',
+						'11450298750351730790_1431_750_1451_750'
+					]:
+						continue
 
 					det['center']['x'] *= -1
 					det['center']['y'] *= -1
 					det['center']['z'] *= -1
-
-					# egovehicle_t_obj = np.array([tx,ty,tz])
-
-					# qx = det['rotation']['x']
-					# qy = det['rotation']['y']
-					# qz = det['rotation']['z']
-					# qw = det['rotation']['w']
-
-					# q = np.array([qw, qx, qy, qz])
-					# egovehicle_R_obj = quat2rotmat(q)
-					# egovehicle_SE3_obj = SE3(rotation=egovehicle_R_obj, translation=egovehicle_t_obj)
-
-					# egovehicle_R_obj = egovehicle_SE3_obj.rotation
-					# egovehicle_q_obj = rotmat2quat(egovehicle_R_obj)
-					# qw, qx, qy, qz = egovehicle_q_obj
-
-					# ego_t_obj = egovehicle_SE3_obj.translation
-					# x, y, z = ego_t_obj
-
-					# det['center']['x'] = tx
-					# det['center']['y'] = ty
-					# det['center']['z'] = tz
-					# det['rotation']['x'] = qx
-					# det['rotation']['y'] = qy
-					# det['rotation']['z'] = qz
-					# det['rotation']['w'] = qw
 
 					if i % 100000 == 0:
 						print(f'On {i}/{len(shard_data)}')

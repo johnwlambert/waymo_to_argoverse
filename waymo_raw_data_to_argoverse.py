@@ -72,7 +72,185 @@ def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[
 def main():
 	""" """
 	TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/VAL_TFRECORDS'
-	log_ids = [
+
+	val_log_ids = get_val_log_ids()
+	test_log_ids = get_test_log_ids()
+
+	save_images = False
+	save_poses = False
+	save_calibration = True
+
+	img_count = 0
+	for log_id in test_log_ids:
+		print(log_id)
+		tfrecord_name = f'segment-{log_id}_with_camera_labels.tfrecord'
+		tf_fpath = f'{TFRECORD_DIR}/{tfrecord_name}'
+		dataset = tf.data.TFRecordDataset(tf_fpath, compression_type='')
+		
+		log_calib_json = None
+
+		for data in dataset:
+			frame = open_dataset.Frame()
+			frame.ParseFromString(bytearray(data.numpy()))
+			# discovered_log_id = '967082162553397800_5102_900_5122_900'
+			assert log_id == frame.context.name
+			
+			# Frame start time, which is the timestamp of the first top lidar spin
+			# within this frame, in microseconds
+			timestamp_ms = frame.timestamp_micros
+			timestamp_ns = int(timestamp_ms * 1000) # to nanoseconds
+			SE3_flattened = np.array(frame.pose.transform)
+			city_SE3_egovehicle = SE3_flattened.reshape(4,4)
+			if save_poses:
+				dump_pose(city_SE3_egovehicle, timestamp_ns, log_id)
+
+			if save_calibration:
+				calib_json = form_calibration_json(frame.context.camera_calibrations)
+				if log_calib_json is None:
+					log_calib_json = calib_json
+
+					calib_json_fpath = f'pose_logs/{log_id}/vehicle_calibration_info.json'
+					check_mkdir(str(Path(calib_json_fpath).parent))
+					save_json_dict(calib_json_fpath, calib_json)
+				else:
+					assert calib_json == log_calib_json	
+
+			# 5 images per frame
+			for index, tf_cam_image in enumerate(frame.images):
+
+				# 4x4 row major transform matrix that tranforms 
+				# 3d points from one frame to another.
+				SE3_flattened = np.array(tf_cam_image.pose.transform)
+				city_SE3_egovehicle = SE3_flattened.reshape(4,4)
+
+				# in seconds
+				timestamp_s =  tf_cam_image.pose_timestamp
+				timestamp_ns = int(timestamp_s * 1e9) # to nanoseconds
+				# tf_cam_image.shutter
+				# tf_cam_image.camera_trigger_time
+				# tf_cam_image.camera_readout_done_time
+				if save_poses:
+					dump_pose(city_SE3_egovehicle, timestamp_ns, log_id)
+
+				if save_images:
+					camera_name = CAMERA_NAMES[tf_cam_image.name]
+					img = tf.image.decode_jpeg(tf_cam_image.image)
+					img_save_fpath = f'logs/{log_id}/{camera_name}/{camera_name}_{timestamp_ns}.jpg'
+					assert not Path(img_save_fpath).exists()
+					check_mkdir(str(Path(img_save_fpath).parent))
+					imageio.imwrite(img_save_fpath, img)
+					img_count += 1
+					if img_count % 100 == 0:
+						print(f"\tSaved {img_count}'th image for log = {log_id}")
+
+				
+				# pose_save_fpath = f'logs/{log_id}/poses/city_SE3_egovehicle_{timestamp_ns}.json'
+				# assert not Path(pose_save_fpath).exists()
+				# save_json_dict(pose_save_fpath)
+
+
+RING_IMAGE_SIZES = {
+	# width x height
+	'ring_front_center': (1920, 1280),
+	'ring_front_left':  (1920, 1280),
+	'ring_side_left': (1920, 886),
+	'ring_side_right': (1920,886)
+}
+
+def form_calibration_json(calib_data):
+	"""
+	Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
+		rotation parameterized as quaternion.
+	Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
+	"""
+	calib_dict = {
+		'camera_data_': []
+	}
+	for camera_calib in calib_data:
+
+		cam_name = CAMERA_NAMES[camera_calib.name]
+		# They provide "Camera frame to vehicle frame."
+		# https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
+		egovehicle_SE3_camera = np.array(camera_calib.extrinsic.transform).reshape(4,4)
+		x, y, z = egovehicle_SE3_camera[:3,3]
+		egovehicle_R_camera = egovehicle_SE3_camera[:3,:3]
+
+		assert np.allclose( egovehicle_SE3_camera[3], np.array([0,0,0,1]) )
+		egovehicle_q_camera = rotmat2quat(egovehicle_R_camera)
+		qw, qx, qy, qz = egovehicle_q_camera
+		f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
+
+		cam_dict = {
+			'key': 'image_raw_' + cam_name,
+			'value': {
+				'focal_length_x_px_': f_u,
+				'focal_length_y_px_': f_v,
+				'focal_center_x_px_': c_u,
+				'focal_center_y_px_': c_v,
+				'skew_': 0,
+				'distortion_coefficients_': [0,0,0],
+				'vehicle_SE3_camera_': {
+					'rotation': {'coefficients': [qw, qx, qy, qz] },
+					'translation': [x,y,z]
+				}
+			}
+		}
+		calib_dict['camera_data_'] += [cam_dict]
+
+	return calib_dict
+
+
+def dump_pose(city_SE3_egovehicle, timestamp, log_id):
+	""" """
+	x,y,z = city_SE3_egovehicle[:3,3]
+	R = city_SE3_egovehicle[:3,:3]
+	assert np.allclose( city_SE3_egovehicle[3], np.array([0,0,0,1]) )
+	q = rotmat2quat(R)
+	w, x, y, z = q
+	pose_dict = {
+		'rotation': [w, x, y, z],
+		'translation': [x,y,z]
+	}
+	json_fpath = f'pose_logs/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json'
+	check_mkdir(str(Path(json_fpath).parent))
+	save_json_dict(json_fpath, pose_dict)
+
+
+def rotmat2quat(R: np.ndarray) -> np.ndarray:
+	""" """
+	q_scipy = Rotation.from_dcm(R).as_quat()
+	x, y, z, w = q_scipy
+	q_argo = w, x, y, z
+	return q_argo
+
+
+def quat2rotmat(q: np.ndarray) -> np.ndarray:
+    """Convert a unit-length quaternion into a rotation matrix.
+    Note that libraries such as Scipy expect a quaternion in scalar-last [x, y, z, w] format,
+    whereas at Argo we work with scalar-first [w, x, y, z] format, so we convert between the
+    two formats here. We use the [w, x, y, z] order because this corresponds to the
+    multidimensional complex number `w + ix + jy + kz`.
+    Args:
+        q: Array of shape (4,) representing (w, x, y, z) coordinates
+    Returns:
+        R: Array of shape (3, 3) representing a rotation matrix.
+    """
+    assert np.isclose(np.linalg.norm(q), 1.0, atol=1e-12)
+    w, x, y, z = q
+    q_scipy = np.array([x, y, z, w])
+    return Rotation.from_quat(q_scipy).as_dcm()
+
+
+def test_cycle():
+	""" """
+	R = np.eye(3)
+	q = rotmat2quat(R)
+	R_cycle = quat2rotmat(q)
+	
+
+def get_val_log_ids():
+	""" """
+	val_log_ids = [
 		'11450298750351730790_1431_750_1451_750',
 		'11406166561185637285_1753_750_1773_750',
 		'16979882728032305374_2719_000_2739_000',
@@ -276,177 +454,10 @@ def main():
 		'4854173791890687260_2880_000_2900_000',
 		'272435602399417322_2884_130_2904_130'
 	]
+	return val_log_ids
 
-	save_images = True
-	save_poses = True
-	save_calibration = False
-
-	img_count = 0
-	for log_id in log_ids:
-		print(log_id)
-		tfrecord_name = f'segment-{log_id}_with_camera_labels.tfrecord'
-		tf_fpath = f'{TFRECORD_DIR}/{tfrecord_name}'
-		dataset = tf.data.TFRecordDataset(tf_fpath, compression_type='')
-		
-		log_calib_json = None
-
-		for data in dataset:
-			frame = open_dataset.Frame()
-			frame.ParseFromString(bytearray(data.numpy()))
-			# discovered_log_id = '967082162553397800_5102_900_5122_900'
-			assert log_id == frame.context.name
-			
-			# Frame start time, which is the timestamp of the first top lidar spin
-			# within this frame, in microseconds
-			timestamp_ms = frame.timestamp_micros
-			timestamp_ns = int(timestamp_ms * 1000) # to nanoseconds
-			SE3_flattened = np.array(frame.pose.transform)
-			city_SE3_egovehicle = SE3_flattened.reshape(4,4)
-			if save_poses:
-				dump_pose(city_SE3_egovehicle, timestamp_ns, log_id)
-
-			if save_calibration:
-				calib_json = form_calibration_json(frame.context.camera_calibrations)
-				if log_calib_json is None:
-					log_calib_json = calib_json
-
-					calib_json_fpath = f'pose_logs/{log_id}/vehicle_calibration_info.json'
-					check_mkdir(str(Path(calib_json_fpath).parent))
-					save_json_dict(calib_json_fpath, calib_json)
-				else:
-					assert calib_json == log_calib_json	
-
-			# 5 images per frame
-			for index, tf_cam_image in enumerate(frame.images):
-
-				# 4x4 row major transform matrix that tranforms 
-				# 3d points from one frame to another.
-				SE3_flattened = np.array(tf_cam_image.pose.transform)
-				city_SE3_egovehicle = SE3_flattened.reshape(4,4)
-
-				# in seconds
-				timestamp_s =  tf_cam_image.pose_timestamp
-				timestamp_ns = int(timestamp_s * 1e9) # to nanoseconds
-				# tf_cam_image.shutter
-				# tf_cam_image.camera_trigger_time
-				# tf_cam_image.camera_readout_done_time
-				if save_poses:
-					dump_pose(city_SE3_egovehicle, timestamp_ns, log_id)
-
-				if save_images:
-					camera_name = CAMERA_NAMES[tf_cam_image.name]
-					img = tf.image.decode_jpeg(tf_cam_image.image)
-					img_save_fpath = f'logs/{log_id}/{camera_name}/{camera_name}_{timestamp_ns}.jpg'
-					assert not Path(img_save_fpath).exists()
-					check_mkdir(str(Path(img_save_fpath).parent))
-					imageio.imwrite(img_save_fpath, img)
-					img_count += 1
-					if img_count % 100 == 0:
-						print(f"\tSaved {img_count}'th image for log = {log_id}")
-
-				
-				# pose_save_fpath = f'logs/{log_id}/poses/city_SE3_egovehicle_{timestamp_ns}.json'
-				# assert not Path(pose_save_fpath).exists()
-				# save_json_dict(pose_save_fpath)
-
-
-RING_IMAGE_SIZES = {
-	# width x height
-	'ring_front_center': (1920, 1280),
-	'ring_front_left':  (1920, 1280),
-	'ring_side_left': (1920, 886),
-	'ring_side_right': (1920,886)
-}
-
-def form_calibration_json(calib_data):
-	"""
-	Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
-		rotation parameterized as quaternion.
-	Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
-	"""
-	calib_dict = {
-		'camera_data_': []
-	}
-	for camera_calib in calib_data:
-
-		cam_name = CAMERA_NAMES[camera_calib.name]
-		# They provide "Camera frame to vehicle frame."
-		# https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
-		egovehicle_SE3_camera = np.array(camera_calib.extrinsic.transform).reshape(4,4)
-		x, y, z = egovehicle_SE3_camera[:3,3]
-		egovehicle_R_camera = egovehicle_SE3_camera[:3,:3]
-
-		assert np.allclose( egovehicle_SE3_camera[3], np.array([0,0,0,1]) )
-		egovehicle_q_camera = rotmat2quat(egovehicle_R_camera)
-		qw, qx, qy, qz = egovehicle_q_camera
-		f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
-
-		cam_dict = {
-			'key': 'image_raw_' + cam_name,
-			'value': {
-				'focal_length_x_px_': f_u,
-				'focal_length_y_px_': f_v,
-				'focal_center_x_px_': c_u,
-				'focal_center_y_px_': c_v,
-				'skew_': 0,
-				'distortion_coefficients_': [0,0,0],
-				'vehicle_SE3_camera_': {
-					'rotation': {'coefficients': [qw, qx, qy, qz] },
-					'translation': [x,y,z]
-				}
-			}
-		}
-		calib_dict['camera_data_'] += [cam_dict]
-
-	return calib_dict
-
-
-def dump_pose(city_SE3_egovehicle, timestamp, log_id):
+def get_test_log_ids():
 	""" """
-	x,y,z = city_SE3_egovehicle[:3,3]
-	R = city_SE3_egovehicle[:3,:3]
-	assert np.allclose( city_SE3_egovehicle[3], np.array([0,0,0,1]) )
-	q = rotmat2quat(R)
-	w, x, y, z = q
-	pose_dict = {
-		'rotation': [w, x, y, z],
-		'translation': [x,y,z]
-	}
-	json_fpath = f'pose_logs/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json'
-	check_mkdir(str(Path(json_fpath).parent))
-	save_json_dict(json_fpath, pose_dict)
-
-
-def rotmat2quat(R: np.ndarray) -> np.ndarray:
-	""" """
-	q_scipy = Rotation.from_dcm(R).as_quat()
-	x, y, z, w = q_scipy
-	q_argo = w, x, y, z
-	return q_argo
-
-
-def quat2rotmat(q: np.ndarray) -> np.ndarray:
-    """Convert a unit-length quaternion into a rotation matrix.
-    Note that libraries such as Scipy expect a quaternion in scalar-last [x, y, z, w] format,
-    whereas at Argo we work with scalar-first [w, x, y, z] format, so we convert between the
-    two formats here. We use the [w, x, y, z] order because this corresponds to the
-    multidimensional complex number `w + ix + jy + kz`.
-    Args:
-        q: Array of shape (4,) representing (w, x, y, z) coordinates
-    Returns:
-        R: Array of shape (3, 3) representing a rotation matrix.
-    """
-    assert np.isclose(np.linalg.norm(q), 1.0, atol=1e-12)
-    w, x, y, z = q
-    q_scipy = np.array([x, y, z, w])
-    return Rotation.from_quat(q_scipy).as_dcm()
-
-
-def test_cycle():
-	""" """
-	R = np.eye(3)
-	q = rotmat2quat(R)
-	R_cycle = quat2rotmat(q)
 	
 
 
