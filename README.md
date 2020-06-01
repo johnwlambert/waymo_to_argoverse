@@ -20,8 +20,9 @@ Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.
 3. Convert to Argoverse format using scripts here
 4. Run tracker
 5. Convert track results to .bin file
-6. Run `create_submission` binary to get tar.gz file. Binary is only compiled using Bazel. I used Google Colab.
-7. Submit to eval server.
+6. Populate a `submission.txtpb` file with metadata describing your submission ([example here](https://raw.githubusercontent.com/waymo-research/waymo-open-dataset/master/waymo_open_dataset/metrics/tools/submission.txtpb)).
+7. Run `create_submission` binary to get tar.gz file. Binary is only compiled using Bazel. I used Google Colab. 
+8. Submit to eval server.
 
 
 
