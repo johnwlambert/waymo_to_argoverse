@@ -3,7 +3,7 @@ Waymo Open Dataset -> Argoverse Converter
 
 ## Overview
 
-Simple utility to convert Waymo Open Dataset raw data, ground truth, and detections to the Argoverse format, run an Argoverse-based tracker, and then submit to leaderboard.
+Simple utility to convert Waymo Open Dataset raw data, ground truth, and detections to the Argoverse format [ [paper](https://arxiv.org/abs/1911.02620), [repo](https://github.com/argoai/argoverse-api) ], run an Argoverse-based tracker, and then submit to Waymo Open Dataset leaderboard.
 
 Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.py` from my [argoverse_cbgs_kf_tracker](https://github.com/johnwlambert/argoverse_cbgs_kf_tracker) repo.
 
