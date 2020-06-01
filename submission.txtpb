@@ -4,15 +4,15 @@
 task: TRACKING_3D
 account_name: "johnwlambert@gmail.com"
 # Change this to your unique method name. Max 25 chars.
-unique_method_name: "GT_Track_for_Louie7"
+unique_method_name: "PPBA AB3DMOT"
 
 authors: "John Lambert"
 authors: ""
 
 affiliation: "Georgia Tech"
-description: "Simple filter on PointPillars PPBA"
+description: "AB3DMOT-style KF on provided PointPillars (PPBA) detections"
 
-method_link: "https://github.com/waymo-to-argoverse/waymo-to-argoverse"
+method_link: "https://github.com/johnwlambert/waymo_to_argoverse"
 
 # See submission.proto for allowed types.
 sensor_type: LIDAR_ALL

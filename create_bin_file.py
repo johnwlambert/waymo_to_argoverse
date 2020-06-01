@@ -85,20 +85,20 @@ def read_json_file(fpath: Union[str, "os.PathLike[str]"]) -> Any:
 		return json.load(f)
 
 
-def create_submission():
+def create_submission(min_conf, min_hits):
 	"""Creates a prediction objects file."""
 	objects = metrics_pb2.Objects()
 
-	#TRACKER_OUTPUT_DATAROOT = '/Users/johnlamb/Downloads/WAYMO_VAL_TESTCASE/validation'
-	#TRACKER_OUTPUT_DATAROOT = '/export/share/Datasets/MSegV12/w_o_d/ab3dmot_tracks_conf0.2/val-split-track-preds-maxage15-minhits5-conf0.2'
-	min_conf = 0.3
-	exp_name = f'ab3dmot_tracks_conf{min_conf}_complete_sharded_val'
-	TRACKER_OUTPUT_DATAROOT = f'/export/share/Datasets/MSegV12/w_o_d/{exp_name}/val-split-track-preds-maxage15-minhits5-conf{min_conf}'
-	val_log_ids = get_val_log_ids()
-	#val_log_ids = ['10868756386479184868_3000_000_3020_000']
+	split = 'test'
+	exp_name = f'ab3dmot_tracks_conf{min_conf}_complete_sharded_{split}_minhits{min_hits}'
+	TRACKER_OUTPUT_DATAROOT = f'/export/share/Datasets/MSegV12/w_o_d/{exp_name}/{split}-split-track-preds-maxage15-minhits{min_hits}-conf{min_conf}'
+	if split == 'val':
+		log_ids = get_val_log_ids()
+	elif split == 'test':
+		log_ids = get_test_log_ids()
 
 	# loop over the logs in the split
-	for i, log_id in enumerate(val_log_ids):
+	for i, log_id in enumerate(log_ids):
 		print(f'On {i}th log {log_id}')
 		start = time.time()
 		# get all the per_sweep_annotations_amodal files
@@ -541,7 +541,28 @@ def get_test_log_ids():
 
 
 if __name__ == '__main__':
-	create_submission()
-	#test_quaternion3d_to_yaw()
+
+	#TRACKER_OUTPUT_DATAROOT = '/Users/johnlamb/Downloads/WAYMO_VAL_TESTCASE/validation'
+	#TRACKER_OUTPUT_DATAROOT = '/export/share/Datasets/MSegV12/w_o_d/ab3dmot_tracks_conf0.2/val-split-track-preds-maxage15-minhits5-conf0.2'
+	# min_conf = 0.3
+
+	# for min_conf, min_hits in [
+	# ]:
+	# 	create_submission(min_conf, min_hits)
+	# 	#test_quaternion3d_to_yaw()
+	# screen
+	# srun -p cpu --qos=inter -c 50 -t 120 --pty bash
+	# python create_bin_file.py
+
+	#create_submission(0.5, 3)
+	#create_submission(0.5, 4)
+	# create_submission(0.5, 6)
+	# create_submission(0.475, 3)
+	# create_submission(0.475, 4)
+	create_submission(0.475, 6)
+	# create_submission(0.525, 3)
+	# create_submission(0.525, 4)
+	# create_submission(0.525, 6)
+
 
 
