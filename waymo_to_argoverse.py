@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 
 """
 !rm -rf waymo-od > /dev/null
