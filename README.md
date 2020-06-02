@@ -12,6 +12,7 @@ Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.
 | HorizonMOT3D                | 0.6345     | 0.2396     | 0.0728    | 0.0029        | 0.2899     |
 | PV-RCNN-KF                  | 0.5553     | 0.2497     | 0.0866    | 0.0063        | 0.3518     |
 | Probabilistic 3DMOT         | 0.4765     | 0.2482     | 0.0899    | 0.0101        | 0.4235     |
+|            ...              |   ...      |    ...     |    ...    |     ...       |   ...      |
 | **PPBA AB3DMOT (this repo)**| **0.2914** |  0.2696	  | 0.1714    |	0.0025 	      | 0.5347     |
 | Waymo Baseline              |  0.2592	   | 0.1753	    | 0.0932    |	0.0020	      |  0.3122    |
 
