@@ -25,7 +25,7 @@ Waymo labels and the detections they provide also follow a rough class structure
 Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places.
 
 A Waymo object defines a coordinate transformation from the labeled object coordinate frame, to the egovehicle coordinate frame, as an SE(3) comprised of rotation (derived from heading) and a translation:
-"""
+```python
 object {
   box {
     center_x: 67.52523040771484
@@ -41,10 +41,10 @@ object {
 score: 0.19764792919158936
 context_name: "10203656353524179475_7625_000_7645_000"
 frame_timestamp_micros: 1522688014970187
-"""
+```
 
 Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 dof transformation from labeled object coordinate frame to egovehicle frame. A quaternion is used of the SO(3) parameterization:
-"""
+```python
 {
   "center": {"x": -25.627050258944625, "y": -3.6203567237860375, "z": 0.4981851744013227}, 
   "rotation": 
@@ -58,7 +58,7 @@ Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 d
     "timestamp": 315969629119937000, 
     "label_class": "VEHICLE"
 },
-"""
+```
 
 Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
 
