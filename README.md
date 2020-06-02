@@ -74,3 +74,15 @@ Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "lo
 
 
 Submission process overview is [here](https://github.com/waymo-research/waymo-open-dataset/blob/master/docs/quick_start.md#use-pre-compiled-pippip3-packages).
+
+
+## References
+```
+@InProceedings{Chang_2019_CVPR,
+author = {Chang, Ming-Fang and Lambert, John and Sangkloy, Patsorn and Singh, Jagjeet and Bak, Slawomir and Hartnett, Andrew and Wang, De and Carr, Peter and Lucey, Simon and Ramanan, Deva and Hays, James},
+title = {Argoverse: 3D Tracking and Forecasting With Rich Maps},
+booktitle = {The IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+month = {June},
+year = {2019}
+}
+```
