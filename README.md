@@ -22,7 +22,7 @@ Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.
 Waymo raw data follows a rough class structure, as defined in [Frame protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto).
 Waymo labels and the detections they provide also follow a rough class structure, defined in [Label protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto).
 
-Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. This is because Argoverse imagery is at 30 Hz (ring camera) and 5 Hz (stereo). Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places. **Argoverse LiDAR points are provided in directly in the egovehicle frame as [.PLY](http://paulbourke.net/dataformats/ply/) files.**
+Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. This is because Argoverse imagery is at 30 Hz (ring camera) and 5 Hz (stereo). Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places. **Argoverse LiDAR points are provided in directly in the egovehicle frame, not in LiDAR sensor frame, as [.PLY](http://paulbourke.net/dataformats/ply/) files.**
 
 A Waymo object defines a coordinate transformation from the labeled object coordinate frame, to the egovehicle coordinate frame, as an SE(3) comprised of rotation (derived from heading) and a translation:
 ```python
@@ -60,6 +60,14 @@ Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 d
 },
 ```
 Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
+
+### Guide to Repo Code Structure
+- `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
+- `dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in 
+random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
+- `waymo_data_splits.py`: functions to provide list of log_ids's in Waymo val and test splits, respectively.
+- `waymo_raw_data_to_argoverse.py`: Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
+- `waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format.
 
 ### Usage Instructions for Waymo Leaderboard
 
