@@ -21,6 +21,9 @@ from waymo_open_dataset import dataset_pb2 as open_dataset
 from waymo_data_splits import get_val_log_ids, get_test_log_ids
 
 """
+Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
+
+See the Frame structure here:
 https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
 
 See paper:
@@ -42,7 +45,15 @@ CAMERA_NAMES = [
     'ring_side_right', # 5, 'SIDE_RIGHT'
 ]
 
-def round_to_micros(t_nanos, base=1000):
+RING_IMAGE_SIZES = {
+	# width x height
+	'ring_front_center': (1920, 1280),
+	'ring_front_left':  (1920, 1280),
+	'ring_side_left': (1920, 886),
+	'ring_side_right': (1920,886)
+}
+
+def round_to_micros(t_nanos, base: int = 1000):
     """
     Round nanosecond timestamp to nearest microsecond timestamp
     """
@@ -59,7 +70,7 @@ def test_round_to_micros():
     assert t_micros == round_to_micros(t_nanos, base=1000)
 
 
-def check_mkdir(dirpath):
+def check_mkdir(dirpath: str):
 	""" """
 	if not Path(dirpath).exists():
 		os.makedirs(dirpath, exist_ok=True)
@@ -73,17 +84,14 @@ def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[
 	with open(json_fpath, "w") as f:
 		json.dump(dictionary, f)
 
-def main():
+
+def main(save_images: bool, save_poses: bool, save_calibration: bool):
 	""" """
-	# TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/VAL_TFRECORDS'
-	TFRECORD_DIR = '/export/share/Datasets/MSegV12/w_o_d/TEST_TFRECORDS'
+	# TFRECORD_DIR = 'VAL_TFRECORDS'
+	TFRECORD_DIR = 'TEST_TFRECORDS'
 
 	val_log_ids = get_val_log_ids()
 	test_log_ids = get_test_log_ids()
-
-	save_images = False
-	save_poses = True
-	save_calibration = False
 
 	img_count = 0
 	for log_id in test_log_ids:
@@ -123,7 +131,7 @@ def main():
 			# 5 images per frame
 			for index, tf_cam_image in enumerate(frame.images):
 
-				# 4x4 row major transform matrix that tranforms 
+				# 4x4 row major transform matrix that transforms 
 				# 3d points from one frame to another.
 				SE3_flattened = np.array(tf_cam_image.pose.transform)
 				city_SE3_egovehicle = SE3_flattened.reshape(4,4)
@@ -153,14 +161,6 @@ def main():
 				# assert not Path(pose_save_fpath).exists()
 				# save_json_dict(pose_save_fpath)
 
-
-RING_IMAGE_SIZES = {
-	# width x height
-	'ring_front_center': (1920, 1280),
-	'ring_front_left':  (1920, 1280),
-	'ring_side_left': (1920, 886),
-	'ring_side_right': (1920,886)
-}
 
 def form_calibration_json(calib_data):
 	"""
@@ -223,8 +223,12 @@ def dump_pose(city_SE3_egovehicle, timestamp, log_id):
 
 
 if __name__ == '__main__':
-	main()
-	# test_cycle()
+
+	save_images = True
+	save_poses = True
+	save_calibration = True
+
+	main(save_images, save_poses, save_calibration)
 
 
 

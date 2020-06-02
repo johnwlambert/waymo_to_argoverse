@@ -17,8 +17,12 @@ from transform_utils import (
 	yaw_to_quaternion3d,
 	rotmat2quat,
 	quat2rotmat,
-
 )
+
+"""
+Given sharded JSON files containing labeled objects or detections, write
+corresponding dummy PLY files for each frame, at each nanosecond timestamp.
+"""
 
 def round_to_micros(t_nanos, base=1000):
     """
@@ -84,23 +88,10 @@ def main(verbose=False):
 				for i, det in enumerate(shard_data):
 
 					log_id = det['context_name']
-
-					if log_id not in [
-						'10868756386479184868_3000_000_3020_000',
-						'9584760613582366524_1620_000_1640_000',
-						'11450298750351730790_1431_750_1451_750'
-					]:
-						continue
-
-					det['center']['x'] *= -1
-					det['center']['y'] *= -1
-					det['center']['z'] *= -1
-
 					if i % 100000 == 0:
 						print(f'On {i}/{len(shard_data)}')
 					timestamp_ms = det['timestamp']
 					timestamp_ns = int(1000 * timestamp_ms)
-
 
 					if log_id not in log_to_timestamp_to_dets_dict:
 						log_to_timestamp_to_dets_dict[log_id] = defaultdict(list)
