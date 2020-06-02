@@ -80,7 +80,7 @@ def create_submission(min_conf: float, min_hits: int):
 	# huge number of boxes can slow down metrics computation.
 
 	# Write objects to a file.
-	f = open(f'/export/share/Datasets/MSegV12/w_o_d/{exp_name}.bin', 'wb')
+	f = open(f'/w_o_d/{exp_name}.bin', 'wb')
 	f.write(objects.SerializeToString())
 	f.close()
 
