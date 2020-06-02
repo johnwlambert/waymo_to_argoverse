@@ -1,7 +1,7 @@
 
 ## Waymo Open Dataset -> Argoverse Converter
 
-### Overview
+### Repo Overview
 
 Simple utility to convert Waymo Open Dataset raw data, ground truth, and detections to the Argoverse format [ [paper](https://arxiv.org/abs/1911.02620), [repo](https://github.com/argoai/argoverse-api) ], run a tracker that accepts Argoverse-format data, and then submit to Waymo Open Dataset leaderboard.
 
@@ -16,6 +16,51 @@ Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.
 | **PPBA AB3DMOT (this repo)**| **0.2914** |  0.2696	  | 0.1714    |	0.0025 	      | 0.5347     |
 | Waymo Baseline              |  0.2592	   | 0.1753	    | 0.0932    |	0.0020	      |  0.3122    |
 
+
+## Data Format Overview
+
+Waymo raw data follows a rough class structure, as defined in [Frame protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto).
+Waymo labels and the detections they provide also follow a rough class structure, defined in [Label protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto).
+
+Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places.
+
+A Waymo object defines a coordinate transformation from the labeled object coordinate frame, to the egovehicle coordinate frame, as an SE(3) comprised of rotation (derived from heading) and a translation:
+"""
+object {
+  box {
+    center_x: 67.52523040771484
+    center_y: -1.3868849277496338
+    center_z: 0.8951533436775208
+    width: 0.8146794438362122
+    length: 1.8189797401428223
+    height: 1.790642261505127
+    heading: -0.11388802528381348
+  }
+  type: TYPE_CYCLIST
+}
+score: 0.19764792919158936
+context_name: "10203656353524179475_7625_000_7645_000"
+frame_timestamp_micros: 1522688014970187
+"""
+
+Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 dof transformation from labeled object coordinate frame to egovehicle frame. A quaternion is used of the SO(3) parameterization:
+"""
+{
+  "center": {"x": -25.627050258944625, "y": -3.6203567237860375, "z": 0.4981851744013227}, 
+  "rotation": 
+    {"x": -0.000662416717311173, 
+    "y": -0.000193607239199898, 
+    "z": 0.000307246307353097, "w": 0.999999714659978}, 
+    "length": 4.784992980957031, 
+    "width": 2.107541785708549, 
+    "height": 1.8, 
+    "track_label_uuid": "215056a9-9325-4a25-bbbd-92d445d60168", 
+    "timestamp": 315969629119937000, 
+    "label_class": "VEHICLE"
+},
+"""
+
+Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
 
 ### Usage Instructions for Waymo Leaderboard
 
