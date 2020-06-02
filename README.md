@@ -62,12 +62,12 @@ Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 d
 Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
 
 ### Guide to Repo Code Structure
-- `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
-- `dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in 
-random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
+- `waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format. Use shards to not exceed Colab RAM.
+- `dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
 - `waymo_data_splits.py`: functions to provide list of log_ids's in Waymo val and test splits, respectively.
 - `waymo_raw_data_to_argoverse.py`: Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
-- `waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format.
+- `run_tracker.sh`: script to run [AB3DMOT-style tracker](https://github.com/johnwlambert/argoverse_cbgs_kf_tracker) on Argoverse-format detections, and write tracks to disk. 
+- `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
 
 ### Usage Instructions for Waymo Leaderboard
 
