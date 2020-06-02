@@ -22,7 +22,7 @@ Achieves the following on the Waymo 3d Tracking Leaderboard, using `run_ab3dmot.
 Waymo raw data follows a rough class structure, as defined in [Frame protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto).
 Waymo labels and the detections they provide also follow a rough class structure, defined in [Label protobuffer](https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/label.proto).
 
-Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. This is because Argoverse imagery is at 30 Hz (ring camera) and 5 Hz (stereo). Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places.
+Argoverse also uses a notion of Frame at 10 Hz, but only for LiDAR and annotated cuboids in LiDAR. This is because Argoverse imagery is at 30 Hz (ring camera) and 5 Hz (stereo). Argoverse data is provided at integer nanosecond frequency throughout, whereas Waymo mixes seconds and microseconds in different places. **Argoverse LiDAR points are provided in directly in the egovehicle frame as [.PLY](http://paulbourke.net/dataformats/ply/) files.**
 
 A Waymo object defines a coordinate transformation from the labeled object coordinate frame, to the egovehicle coordinate frame, as an SE(3) comprised of rotation (derived from heading) and a translation:
 ```python
@@ -59,7 +59,6 @@ Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 d
     "label_class": "VEHICLE"
 },
 ```
-
 Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
 
 ### Usage Instructions for Waymo Leaderboard
