@@ -20,8 +20,11 @@ from transform_utils import (
 )
 
 """
-Given sharded JSON files containing labeled objects or detections, write
-corresponding dummy PLY files for each frame, at each nanosecond timestamp.
+Given sharded JSON files containing labeled objects or detections in random order, 
+accumulate objects according to frame, at each nanosecond timestamp, and 
+write them to disk in JSON again.
+
+Also, write corresponding dummy PLY files for each frame.
 """
 
 def round_to_micros(t_nanos, base=1000):
