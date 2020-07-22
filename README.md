@@ -3,11 +3,11 @@
 
 <p align="left">
   <img src="https://user-images.githubusercontent.com/16724970/83801105-8c64f600-a676-11ea-8ce7-f7755e9f2a93.gif" height="275">
-  <img src="https://user-images.githubusercontent.com/16724970/83801488-35abec00-a677-11ea-9660-d2c150817382.gif" height="280">
+  <img src="https://user-images.githubusercontent.com/16724970/83801488-35abec00-a677-11ea-9660-d2c150817382.gif" height="275">
 </p>
 <p align="left">
-  <img src="https://user-images.githubusercontent.com/16724970/83801499-3b093680-a677-11ea-868e-122139b3fe94.gif" height="280">
-  <img src="https://user-images.githubusercontent.com/16724970/83801307-e8c81580-a676-11ea-9385-8b35605fc94c.gif" height="280">
+  <img src="https://user-images.githubusercontent.com/16724970/83801499-3b093680-a677-11ea-868e-122139b3fe94.gif" height="275">
+  <img src="https://user-images.githubusercontent.com/16724970/83801307-e8c81580-a676-11ea-9385-8b35605fc94c.gif" height="275">
 </p>
 
 ### Repo Overview
