@@ -2,7 +2,7 @@
 ## Waymo Open Dataset -> Argoverse Converter
 
 <p align="left">
-  <img src="https://user-images.githubusercontent.com/16724970/83801105-8c64f600-a676-11ea-8ce7-f7755e9f2a93.gif" height="280">
+  <img src="https://user-images.githubusercontent.com/16724970/83801105-8c64f600-a676-11ea-8ce7-f7755e9f2a93.gif" height="275">
   <img src="https://user-images.githubusercontent.com/16724970/83801488-35abec00-a677-11ea-9660-d2c150817382.gif" height="280">
 </p>
 <p align="left">
