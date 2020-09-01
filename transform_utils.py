@@ -1,7 +1,6 @@
-
-
 import numpy as np
 from scipy.spatial.transform import Rotation
+from typing import Tuple
 
 
 def test_quaternion3d_to_yaw():
