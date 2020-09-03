@@ -1,0 +1,21 @@
+language: python
+dist: xenial
+python:
+    - "3.7.3"
+
+install:
+    - pip install -r requirements.txt
+
+script:
+    - git clone https://github.com/argoai/argoverse-api.git
+    - cd argoverse-api
+    - pip install -e .
+    - cd ..
+    - pytest tests/
+    
+notifications:
+    email:
+        recipients:
+            - johnwlambert@gmail.com
+        on_success: change
+        on_failure: change
