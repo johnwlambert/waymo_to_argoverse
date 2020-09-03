@@ -120,5 +120,32 @@ def test_transform():
         assert np.allclose(y, qy)
         assert np.allclose(z, qz)
 
+def rotX(deg: float):
+    """
+    Compute rotation matrix about the X-axis.
+    Args:
+    -   deg: in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("x", t).as_dcm()
 
+
+def rotZ(deg: float):
+    """
+    Compute rotation matrix about the Z-axis.
+    Args
+    -   deg: in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("z", t).as_dcm()
+
+
+def rotY(deg: float):
+    """
+    Compute rotation matrix about the Y-axis.
+    Args
+    -   deg: in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("y", t).as_dcm()
 

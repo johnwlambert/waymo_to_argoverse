@@ -70,6 +70,10 @@ Argoverse data is provided similarly, but in JSON with full 6 dof instead of 4 d
 ```
 Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "log_id".
 
+### Installation
+Before you use this code, you will need to download a few packages. To install the `waymo_open_dataset` library, use the commands [here](https://github.com/waymo-research/waymo-open-dataset/blob/master/docs/quick_start.md#use-pre-compiled-pippip3-packages) to install the pre-compiled pip packages.
+You will also need to download `argoverse`. You can use [this command](https://github.com/argoai/argoverse-api#4-install-argoverse-module) to download the package.
+
 ### Guide to Repo Code Structure
 - `waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format. Use shards to not exceed Colab RAM.
 - `dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
@@ -77,6 +81,9 @@ Whereas Waymo uses "context.name" as a unique log identifier, Argoverse uses "lo
 - `waymo_raw_data_to_argoverse.py`: Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
 - `run_tracker.sh`: script to run [AB3DMOT-style tracker](https://github.com/johnwlambert/argoverse_cbgs_kf_tracker) on Argoverse-format detections, and write tracks to disk. 
 - `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
+
+### Converting Waymo Raw Data to Argoverse Format
+To convert the Waymo dataset to Argoverse format, you will need to run `python waymo_raw_data_to_argoverse.py --waymo-dir /path-to-waymo-data/ --argo-dir /path-to-write-argo-data/`. After running this script, you will also need to run `python argoverse/utils/make_track_label_folders.py /path-to-write-argo-data/` to create the `track_labels_amodal` folder. There is more information about that [here](https://github.com/argoai/argoverse-api#optional-remake-the-object-oriented-label-folders).
 
 ### Usage Instructions for Waymo Leaderboard
 
