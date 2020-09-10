@@ -21,6 +21,7 @@ import tensorflow.compat.v1 as tf
 
 tf.enable_eager_execution()
 
+from argoverse.utils.json_utils import save_json_dict
 from argoverse.utils.se3 import SE3
 import waymo_open_dataset
 from waymo_open_dataset.utils import range_image_utils
@@ -28,7 +29,7 @@ from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
-from transform_utils import rotX, rotY, rotmat2quat, quat2rotmat, yaw_to_quaternion3d
+from waymo2argo.transform_utils import rotX, rotY, rotmat2quat, quat2rotmat, yaw_to_quaternion3d
 
 """
 Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
@@ -70,21 +71,22 @@ RING_IMAGE_SIZES = {
 }
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    elif v.lower() in ("yes", "true", "t", "y", 1):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", 0):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
 def round_to_micros(t_nanos: int, base: int = 1000) -> int:
     """
     Round nanosecond timestamp to nearest microsecond timestamp
     """
     return base * round(t_nanos / base)
-
-
-def test_round_to_micros():
-    """
-    test_round_to_micros()
-    """
-    t_nanos = 1508103378165379072
-    t_micros = 1508103378165379000
-
-    assert t_micros == round_to_micros(t_nanos, base=1000)
 
 
 def check_mkdir(dirpath: str) -> None:
@@ -93,24 +95,15 @@ def check_mkdir(dirpath: str) -> None:
         os.makedirs(dirpath, exist_ok=True)
 
 
-def save_json_dict(
-    json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[Any, Any]
-) -> None:
-    """Save a Python dictionary to a JSON file.
-
-    Args:
-    json_fpath: Path to file to create.
-    dictionary: Python dictionary to be serialized.
-    """
-    with open(json_fpath, "w") as f:
-        json.dump(dictionary, f)
-
-
 def get_log_id_from_files(record_dir: str) -> List[str]:
-    """Get the log IDs of the Waymo records from the directory where they are stored
+    """Get the log IDs of the Waymo records from the directory
+       where they are stored
 
     Args:
-        record_dir: The path to the directory where the Waymo data is stored
+        record_dir: The path to the directory where the Waymo data
+                    is stored
+                    Example: "/path-to-waymo-data/"
+                    The args.waymo_dir is used here by default
     Returns:
         log_ids: A list of log IDs from the Waymo dataset
     """
@@ -130,7 +123,7 @@ def main(args: argparse.Namespace) -> None:
     ARGO_WRITE_DIR = args.argo_dir
     track_id_dict = {}
     img_count = 0
-    log_ids = get_log_id_from_files(TFRECORD_DIR)[:1]
+    log_ids = get_log_id_from_files(TFRECORD_DIR)
     for log_id in log_ids:
         print(log_id)
         tfrecord_name = f"segment-{log_id}_with_camera_labels.tfrecord"
@@ -142,8 +135,8 @@ def main(args: argparse.Namespace) -> None:
             frame.ParseFromString(bytearray(data.numpy()))
             # Checking if we extracted the correct log ID
             assert log_id == frame.context.name
-            # Frame start time, which is the timestamp of the first top lidar spin
-            # within this frame, in microseconds
+            # Frame start time, which is the timestamp
+            # of the first top lidar spin within this frame, in microseconds
             timestamp_ms = frame.timestamp_micros
             timestamp_ns = int(timestamp_ms * 1000)  # to nanoseconds
             SE3_flattened = np.array(frame.pose.transform)
@@ -257,15 +250,16 @@ def form_calibration_json(calib_data):
         standardcam_SE3_waymocam = SE3(
             rotation=standardcam_R_waymocam, translation=np.zeros(3)
         )
-        waymocam_SE3_egovehicle = SE3(
+        egovehicle_SE3_waymocam = SE3(
             rotation=egovehicle_SE3_waymocam[:3, :3],
             translation=egovehicle_SE3_waymocam[:3, 3],
         )
         standardcam_SE3_egovehicle = standardcam_SE3_waymocam.right_multiply_with_se3(
-            waymocam_SE3_egovehicle
+            egovehicle_SE3_waymocam.inverse()
         )
-        egovehicle_q_camera = rotmat2quat(standardcam_SE3_egovehicle.rotation)
-        x, y, z = standardcam_SE3_egovehicle.translation
+        egovehicle_SE3_standardcam = standardcam_SE3_egovehicle.inverse()
+        egovehicle_q_camera = rotmat2quat(egovehicle_SE3_standardcam.rotation)
+        x, y, z = egovehicle_SE3_standardcam.translation
         qw, qx, qy, qz = egovehicle_q_camera
         f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
         cam_dict = {
@@ -346,7 +340,8 @@ def dump_object_labels(
     argoverse_labels = []
     for label in labels:
         argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
-    json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/tracked_object_labels_{timestamp}.json"
+    json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
+    json_fpath += f"tracked_object_labels_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
     save_json_dict(json_fpath, argoverse_labels)
 
@@ -391,27 +386,30 @@ def build_argo_label(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--save-images", default=True, type=bool, help="whether to save images or not"
+        "--save-images",
+        default=True,
+        type=str2bool,
+        help="whether to save images or not",
     )
     parser.add_argument(
-        "--save-poses", default=True, type=bool, help="whether to save poses or not"
+        "--save-poses", default=True, type=str2bool, help="whether to save poses or not"
     )
     parser.add_argument(
         "--save-calibration",
         default=True,
-        type=bool,
+        type=str2bool,
         help="whether to save camera calibration information or not",
     )
     parser.add_argument(
         "--save-cloud",
         default=True,
-        type=bool,
+        type=str2bool,
         help="whether to save point clouds or not",
     )
     parser.add_argument(
         "--save-labels",
         default=True,
-        type=bool,
+        type=str2bool,
         help="whether to save object labels or not",
     )
     parser.add_argument(
