@@ -156,17 +156,11 @@ def main(args: argparse.Namespace) -> None:
                 range_image_top_pose,
             ) = frame_utils.parse_range_image_and_camera_projection(frame)
             if args.range_image == 1:
-                (
-                    points_ri,
-                    cp_points_ri,
-                ) = frame_utils.convert_range_image_to_point_cloud(
+                points_ri, cp_points_ri = frame_utils.convert_range_image_to_point_cloud(
                     frame, range_images, camera_projections, range_image_top_pose
                 )
             elif args.range_image == 2:
-                (
-                    points_ri,
-                    cp_points_ri,
-                ) = frame_utils.convert_range_image_to_point_cloud(
+                points_ri, cp_points_ri = frame_utils.convert_range_image_to_point_cloud(
                     frame,
                     range_images,
                     camera_projections,
@@ -205,7 +199,7 @@ def main(args: argparse.Namespace) -> None:
                 city_SE3_egovehicle = SE3_flattened.reshape(4, 4)
                 # in seconds
                 timestamp_s = tf_cam_image.pose_timestamp
-                timestamp_ns = int(timestamp_s * 1e9)  # to nanoseconds
+                timestamp_ns = round_to_micros(int(timestamp_s * 1e9))  # to nanoseconds
                 if args.save_poses:
                     dump_pose(city_SE3_egovehicle, timestamp_ns, log_id, ARGO_WRITE_DIR)
 
@@ -217,7 +211,8 @@ def main(args: argparse.Namespace) -> None:
                         frame.context.camera_calibrations,
                         tf_cam_image.name,
                     )
-                    img_save_fpath = f"{ARGO_WRITE_DIR}/{log_id}/{camera_name}/{camera_name}_{timestamp_ns}.jpg"
+                    img_save_fpath = f"{ARGO_WRITE_DIR}/{log_id}/{camera_name}/"
+                    img_save_fpath += f"{camera_name}_{timestamp_ns}.jpg"
                     # assert not Path(img_save_fpath).exists()
                     check_mkdir(str(Path(img_save_fpath).parent))
                     imageio.imwrite(img_save_fpath, new_img)
@@ -322,6 +317,7 @@ def dump_point_cloud(
         log_id: Log ID that the reading belongs to
         parent_path: The directory that the converted data is written to
     """
+    points = points.astype(float)
     data = {"x": points[:, 0], "y": points[:, 1], "z": points[:, 2]}
     cloud = PyntCloud(pd.DataFrame(data))
     cloud_fpath = f"{parent_path}/{log_id}/lidar/PC_{timestamp}.ply"
@@ -347,7 +343,8 @@ def dump_object_labels(
     """
     argoverse_labels = []
     for label in labels:
-        if label.type != 3:
+        # We don't want signs, as that is not a category in Argoverse
+        if label.type != LABEL_TYPES.index("SIGN"):
             argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
