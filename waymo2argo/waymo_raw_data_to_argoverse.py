@@ -29,7 +29,13 @@ from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
-from waymo2argo.transform_utils import rotX, rotY, rotmat2quat, quat2rotmat, yaw_to_quaternion3d
+from waymo2argo.transform_utils import (
+    rotX,
+    rotY,
+    rotmat2quat,
+    quat2rotmat,
+    yaw_to_quaternion3d,
+)
 
 """
 Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
@@ -102,18 +108,19 @@ def get_log_id_from_files(record_dir: str) -> List[str]:
     Args:
         record_dir: The path to the directory where the Waymo data
                     is stored
-                    Example: "/path-to-waymo-data/"
+                    Example: "/path-to-waymo-data"
                     The args.waymo_dir is used here by default
     Returns:
-        log_ids: A list of log IDs from the Waymo dataset
+        log_ids: A map of log IDs to tf records from the Waymo dataset
     """
     files = glob.glob(f"{record_dir}/*.tfrecord")
-    log_ids = []
-    for file in files:
-        file = file.strip(record_dir)
-        file = file.strip("segment-")
-        file = file.strip("with_camera_labels.tfrecord")
-        log_ids.append(file)
+    log_ids = {}
+    for i, file in enumerate(files):
+        file = file.replace(record_dir, "")
+        file = file.replace("/segment-", "")
+        file = file.replace(".tfrecord", "")
+        file = file.replace("_with_camera_labels", "")
+        log_ids[file] = files[i]
     return log_ids
 
 
@@ -124,10 +131,7 @@ def main(args: argparse.Namespace) -> None:
     track_id_dict = {}
     img_count = 0
     log_ids = get_log_id_from_files(TFRECORD_DIR)
-    for log_id in log_ids:
-        print(log_id)
-        tfrecord_name = f"segment-{log_id}_with_camera_labels.tfrecord"
-        tf_fpath = f"{TFRECORD_DIR}/{tfrecord_name}"
+    for log_id, tf_fpath in log_ids.items():
         dataset = tf.data.TFRecordDataset(tf_fpath, compression_type="")
         log_calib_json = None
         for data in dataset:
@@ -144,8 +148,8 @@ def main(args: argparse.Namespace) -> None:
             if args.save_poses:
                 dump_pose(city_SE3_egovehicle, timestamp_ns, log_id, ARGO_WRITE_DIR)
             # Reading lidar data and saving it in point cloud format
-            # We are only using the first range image by default (Waymo provides two range images)
-            # If you want to use the second range image, you can change it in the arguments
+            # We are only using the first range image (Waymo provides two range images)
+            # If you want to use the second one, you can change it in the arguments
             (
                 range_images,
                 camera_projections,
@@ -227,6 +231,8 @@ def undistort_image(img: np.ndarray, calib_data: Any, camera_name: int):
     for camera_calib in calib_data:
         if camera_calib.name == camera_name:
             f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
+            # k1, k2 and k3 are the tangential distortion coefficients
+            # p1, p2 are the radial distortion coefficients
             camera_matrix = np.array([[f_u, 0, c_u], [0, f_v, c_v], [0, 0, 1]])
             dist_coeffs = np.array([k1, k2, p1, p2, k3])
             return cv2.undistort(img, camera_matrix, dist_coeffs)
@@ -284,10 +290,12 @@ def form_calibration_json(calib_data):
 def dump_pose(
     city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, parent_path: str
 ) -> None:
-    """Saves the SE3 transformation from city frame to egovehicle frame at a particular timestamp
+    """Saves the SE3 transformation from city frame
+        to egovehicle frame at a particular timestamp
 
     Args:
-        city_SE3_egovehicle: A (4,4) numpy array representing the SE3 transformation from city to egovehicle frame
+        city_SE3_egovehicle: A (4,4) numpy array representing the
+                            SE3 transformation from city to egovehicle frame
         timestamp: Timestamp in nanoseconds when the lidar reading occurred
         log_id: Log ID that the reading belongs to
         parent_path: The directory that the converted data is written to
@@ -339,7 +347,8 @@ def dump_object_labels(
     """
     argoverse_labels = []
     for label in labels:
-        argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
+        if label.type != 3:
+            argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
