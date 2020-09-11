@@ -1,4 +1,6 @@
 
+[![Build Status](https://travis-ci.com/johnwlambert/waymo_to_argoverse.svg?branch=master)](https://travis-ci.com/johnwlambert/waymo_to_argoverse)
+
 ## Waymo Open Dataset -> Argoverse Converter
 
 <p align="left">
