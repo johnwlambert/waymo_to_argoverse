@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Union
 import uuid
 
 import cv2
+import google
 from pyntcloud import PyntCloud
 from scipy.spatial.transform import Rotation
 import tensorflow.compat.v1 as tf
@@ -59,9 +60,11 @@ CAMERA_NAMES = [
 ]
 
 # Mapping from Argo Label types to Waymo Label types
+# Argo label types are on the left, Waymo's are on the right
+# Argoverse labels: https://github.com/argoai/argoverse-api/blob/master/argoverse/data_loading/object_classes.py#L6
 # The indices correspond to Waymo's label types
 LABEL_TYPES = [
-    "OTHER_MOVER",  # 0, TYPE_UNKNOWN
+    "UNKNOWN",  # 0, TYPE_UNKNOWN
     "VEHICLE",  # 1, TYPE_VEHICLE
     "PEDESTRIAN",  # 2, TYPE_PEDESTRIAN
     "SIGN",  # 3, TYPE_SIGN
@@ -101,7 +104,7 @@ def check_mkdir(dirpath: str) -> None:
         os.makedirs(dirpath, exist_ok=True)
 
 
-def get_log_id_from_files(record_dir: str) -> List[str]:
+def get_log_ids_from_files(record_dir: str) -> Dict:
     """Get the log IDs of the Waymo records from the directory
        where they are stored
 
@@ -130,7 +133,7 @@ def main(args: argparse.Namespace) -> None:
     ARGO_WRITE_DIR = args.argo_dir
     track_id_dict = {}
     img_count = 0
-    log_ids = get_log_id_from_files(TFRECORD_DIR)
+    log_ids = get_log_ids_from_files(TFRECORD_DIR)
     for log_id, tf_fpath in log_ids.items():
         dataset = tf.data.TFRecordDataset(tf_fpath, compression_type="")
         log_calib_json = None
@@ -213,7 +216,6 @@ def main(args: argparse.Namespace) -> None:
                     )
                     img_save_fpath = f"{ARGO_WRITE_DIR}/{log_id}/{camera_name}/"
                     img_save_fpath += f"{camera_name}_{timestamp_ns}.jpg"
-                    # assert not Path(img_save_fpath).exists()
                     check_mkdir(str(Path(img_save_fpath).parent))
                     imageio.imwrite(img_save_fpath, new_img)
                     img_count += 1
@@ -221,7 +223,11 @@ def main(args: argparse.Namespace) -> None:
                         print(f"\tSaved {img_count}'th image for log = {log_id}")
 
 
-def undistort_image(img: np.ndarray, calib_data: Any, camera_name: int):
+def undistort_image(
+    img: np.ndarray,
+    calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
+    camera_name: int,
+) -> np.ndarray:
     """Undistort the image from the Waymo dataset given camera calibration data"""
     for camera_calib in calib_data:
         if camera_calib.name == camera_name:
@@ -233,7 +239,9 @@ def undistort_image(img: np.ndarray, calib_data: Any, camera_name: int):
             return cv2.undistort(img, camera_matrix, dist_coeffs)
 
 
-def form_calibration_json(calib_data):
+def form_calibration_json(
+    calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
+) -> Dict:
     """
     Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
             rotation parameterized as quaternion.
@@ -317,6 +325,7 @@ def dump_point_cloud(
         log_id: Log ID that the reading belongs to
         parent_path: The directory that the converted data is written to
     """
+    # Point cloud needs to be of type float
     points = points.astype(float)
     data = {"x": points[:, 0], "y": points[:, 1], "z": points[:, 2]}
     cloud = PyntCloud(pd.DataFrame(data))
@@ -344,7 +353,9 @@ def dump_object_labels(
     argoverse_labels = []
     for label in labels:
         # We don't want signs, as that is not a category in Argoverse
-        if label.type != LABEL_TYPES.index("SIGN"):
+        if label.type != LABEL_TYPES.index("SIGN") and label.type != LABEL_TYPES.index(
+            "UNKNOWN"
+        ):
             argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
