@@ -120,8 +120,8 @@ def test_transform():
         assert np.allclose(y, qy)
         assert np.allclose(z, qz)
 
-def rotX(deg: float):
-    """Compute rotation matrix about the X-axis.
+def rotX(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the X-axis.
     
     Args:
         deg: Euler angle in degrees
@@ -130,8 +130,8 @@ def rotX(deg: float):
     return Rotation.from_euler("x", t).as_dcm()
 
 
-def rotZ(deg: float):
-    """Compute rotation matrix about the Z-axis.
+def rotZ(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the Z-axis.
     
     Args:
         deg: Euler angle in degrees
@@ -140,8 +140,8 @@ def rotZ(deg: float):
     return Rotation.from_euler("z", t).as_dcm()
 
 
-def rotY(deg: float):
-    """Compute rotation matrix about the Y-axis.
+def rotY(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the Y-axis.
     
     Args:
         deg: Euler angle in degrees
