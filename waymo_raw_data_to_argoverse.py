@@ -80,17 +80,6 @@ RING_IMAGE_SIZES = {
 }
 
 
-def str2bool(v):
-    if isinstance(v, bool):
-        return v
-    elif v.lower() in ("yes", "true", "t", "y", 1):
-        return True
-    elif v.lower() in ("no", "false", "f", "n", 0):
-        return False
-    else:
-        raise argparse.ArgumentTypeError("Boolean value expected.")
-
-
 def round_to_micros(t_nanos: int, base: int = 1000) -> int:
     """
     Round nanosecond timestamp to nearest microsecond timestamp
@@ -128,7 +117,9 @@ def get_log_ids_from_files(record_dir: str) -> Dict[str,str]:
 
 
 def main(args: argparse.Namespace) -> None:
-    """ """
+    """Main script to convert Waymo object labels, LiDAR, images, pose, and calibration to
+    the Argoverse data format on disk
+    """
     TFRECORD_DIR = args.waymo_dir
     ARGO_WRITE_DIR = args.argo_dir
     track_id_dict = {}
@@ -202,7 +193,8 @@ def main(args: argparse.Namespace) -> None:
                 city_SE3_egovehicle = SE3_flattened.reshape(4, 4)
                 # in seconds
                 timestamp_s = tf_cam_image.pose_timestamp
-                timestamp_ns = round_to_micros(int(timestamp_s * 1e9))  # to nanoseconds
+                # TODO: this looks buggy, need to confirm
+                timestamp_ns = int(round_to_micros(int(timestamp_s * 1e9)) * 1000)  # to nanoseconds
                 if args.save_poses:
                     dump_pose(city_SE3_egovehicle, timestamp_ns, log_id, ARGO_WRITE_DIR)
 
@@ -263,7 +255,7 @@ def form_calibration_json(
             rotation=egovehicle_SE3_waymocam[:3, :3],
             translation=egovehicle_SE3_waymocam[:3, 3],
         )
-        standardcam_SE3_egovehicle = standardcam_SE3_waymocam.right_multiply_with_se3(
+        standardcam_SE3_egovehicle = standardcam_SE3_waymocam.compose(
             egovehicle_SE3_waymocam.inverse()
         )
         egovehicle_SE3_standardcam = standardcam_SE3_egovehicle.inverse()
@@ -398,6 +390,17 @@ def build_argo_label(
         track_id = track_id_dict[label.id]
     label_dict["track_label_uuid"] = track_id
     return label_dict
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    elif v.lower() in ("yes", "true", "t", "y", 1):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", 0):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 if __name__ == "__main__":
