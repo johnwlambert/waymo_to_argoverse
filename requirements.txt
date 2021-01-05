@@ -7,3 +7,4 @@ numpy==1.19.1
 scipy==1.4.1
 pyntcloud==0.1.2
 tensorflow==2.4.0
+argoverse-api @ git+https://github.com/argoai/argoverse-api.git@master
