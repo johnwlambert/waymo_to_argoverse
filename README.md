@@ -77,10 +77,10 @@ Before you use this code, you will need to download a few packages. To install t
 You will also need to download `argoverse`. You can use [this command](https://github.com/argoai/argoverse-api#4-install-argoverse-module) to download the package.
 
 ### Guide to Repo Code Structure
-- `waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format. Use shards to not exceed Colab RAM.
-- `dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
+- `waymo2argo/waymo_dets_to_argoverse.py`: Convert provided Waymo detections to Argoverse format. Use shards to not exceed Colab RAM.
+- `waymo2argo/dump_waymo_persweep_detections.py`: Given sharded JSON files containing labeled objects or detections in random order, accumulate objects according to frame, at each nanosecond timestamp. Write to disk.
 - `waymo_data_splits.py`: functions to provide list of log_ids's in Waymo val and test splits, respectively.
-- `waymo_raw_data_to_argoverse.py`: Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
+- `waymo2argo/waymo_raw_data_to_argoverse.py`: Extract poses, LiDAR, images, and camera calibration from raw Waymo Open Dataset TFRecords.
 - `run_tracker.sh`: script to run [AB3DMOT-style tracker](https://github.com/johnwlambert/argoverse_cbgs_kf_tracker) on Argoverse-format detections, and write tracks to disk. 
 - `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
 
