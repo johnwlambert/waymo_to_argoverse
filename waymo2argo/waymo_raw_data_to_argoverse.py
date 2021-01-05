@@ -9,26 +9,26 @@ import math
 import numpy as np
 import os
 import pandas as pd
-from pathlib import Path
 import pdb
-from typing import Any, Dict, List, Union
 import uuid
+from pathlib import Path
+from typing import Any, Dict, List, Union
+
 
 import cv2
 import google
-from pyntcloud import PyntCloud
-from scipy.spatial.transform import Rotation
 import tensorflow.compat.v1 as tf
-
-tf.enable_eager_execution()
-
+import waymo_open_dataset
 from argoverse.utils.json_utils import save_json_dict
 from argoverse.utils.se3 import SE3
-import waymo_open_dataset
+from pyntcloud import PyntCloud
+from scipy.spatial.transform import Rotation
 from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
+
+tf.enable_eager_execution()
 
 from waymo2argo.transform_utils import (
     rotX,
@@ -104,7 +104,7 @@ def check_mkdir(dirpath: str) -> None:
         os.makedirs(dirpath, exist_ok=True)
 
 
-def get_log_ids_from_files(record_dir: str) -> Dict:
+def get_log_ids_from_files(record_dir: str) -> Dict[str,str]:
     """Get the log IDs of the Waymo records from the directory
        where they are stored
 
