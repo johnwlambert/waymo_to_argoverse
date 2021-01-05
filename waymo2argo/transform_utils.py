@@ -1,7 +1,6 @@
-
-
 import numpy as np
 from scipy.spatial.transform import Rotation
+from typing import Tuple
 
 
 def test_quaternion3d_to_yaw():
@@ -17,9 +16,9 @@ def se2_to_yaw(B_SE2_A):
     """
     Computes the pose vector v from a homogeneous transform A.
     Args:
-    -   B_SE2_A
+        B_SE2_A
     Returns:
-    -   v
+        v
     """
     R = B_SE2_A.rotation
     theta = np.arctan2(R[1,0], R[0,0])
@@ -29,10 +28,10 @@ def se2_to_yaw(B_SE2_A):
 def quaternion3d_to_yaw(q: np.ndarray) -> float:
 	"""
 	Args:
-	-   q: qx,qy,qz,qw: quaternion coefficients
+	    q: qx,qy,qz,qw: quaternion coefficients
 	
 	Returns:
-	-	yaw: float, rotation about the z-axis
+	    yaw: float, rotation about the z-axis
 	"""
 	w, x, y, z = q # in argo format
 	q_scipy = x, y, z, w
@@ -89,9 +88,9 @@ def test_cycle():
 def rotMatZ_3D(yaw):
     """
     Args:
-    -   tz
+        tz
     Returns:
-    -   rot_z
+        rot_z
     """
     c = np.cos(yaw)
     s = np.sin(yaw)
@@ -121,5 +120,32 @@ def test_transform():
         assert np.allclose(y, qy)
         assert np.allclose(z, qz)
 
+def rotX(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the X-axis.
+    
+    Args:
+        deg: Euler angle in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("x", t).as_dcm()
 
+
+def rotZ(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the Z-axis.
+    
+    Args:
+        deg: Euler angle in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("z", t).as_dcm()
+
+
+def rotY(deg: float) -> np.ndarray:
+    """Compute 3x3 rotation matrix about the Y-axis.
+    
+    Args:
+        deg: Euler angle in degrees
+    """
+    t = np.deg2rad(deg)
+    return Rotation.from_euler("y", t).as_dcm()
 

@@ -72,7 +72,8 @@ def save_json_dict(json_fpath: Union[str, "os.PathLike[str]"], dictionary: Dict[
         json.dump(dictionary, f)
 
 
-DRIVE_DIR = '/content/gdrive/My Drive/WaymoOpenDatasetTracking'
+#DRIVE_DIR = '/content/gdrive/My Drive/WaymoOpenDatasetTracking'
+DRIVE_DIR = '/srv/datasets/waymo_opendataset/waymo_open_dataset_v_1_0_0/training'
 
 bin_fnames = [
 	'detection_3d_cyclist_detection_test.bin',

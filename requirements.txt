@@ -1,0 +1,9 @@
+imageio==2.9.0
+waymo_open_dataset_tf_2_1_0==1.2.0
+pandas==1.1.1
+opencv_python==4.4.0.42
+tensorflow_gpu==2.1.0
+numpy==1.19.1
+scipy==1.4.1
+pyntcloud==0.1.2
+tensorflow==2.3.0
