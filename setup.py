@@ -6,6 +6,10 @@ with open("README.md", "r") as fh:
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+# dependency_links not needed, install_requires sufficient
+# per PEP 508 https://www.python.org/dev/peps/pep-0508/
+# and https://stackoverflow.com/a/54216163
+
 setup(
     name="waymo2argo",
     version="0.0.1",
@@ -15,6 +19,5 @@ setup(
         "Operating System :: POSIX",
     ],
     packages=find_packages(exclude=["tests"]),
-    install_requires=requirements,
-    dependency_links=["git+https://github.com/argoai/argoverse-api.git@master"],
+    install_requires=requirements
 )
