@@ -93,7 +93,7 @@ def check_mkdir(dirpath: str) -> None:
         os.makedirs(dirpath, exist_ok=True)
 
 
-def get_log_ids_from_files(record_dir: str) -> Dict[str,str]:
+def get_log_ids_from_files(record_dir: str) -> Dict[str, str]:
     """Get the log IDs of the Waymo records from the directory
        where they are stored
 
@@ -177,9 +177,7 @@ def main(args: argparse.Namespace) -> None:
                 calib_json = form_calibration_json(frame.context.camera_calibrations)
                 if log_calib_json is None:
                     log_calib_json = calib_json
-                    calib_json_fpath = (
-                        f"{ARGO_WRITE_DIR}/{log_id}/vehicle_calibration_info.json"
-                    )
+                    calib_json_fpath = f"{ARGO_WRITE_DIR}/{log_id}/vehicle_calibration_info.json"
                     check_mkdir(str(Path(calib_json_fpath).parent))
                     save_json_dict(calib_json_fpath, calib_json)
                 else:
@@ -244,20 +242,14 @@ def form_calibration_json(
         cam_name = CAMERA_NAMES[camera_calib.name]
         # They provide "Camera frame to vehicle frame."
         # https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
-        egovehicle_SE3_waymocam = np.array(camera_calib.extrinsic.transform).reshape(
-            4, 4
-        )
+        egovehicle_SE3_waymocam = np.array(camera_calib.extrinsic.transform).reshape(4, 4)
         standardcam_R_waymocam = rotY(-90).dot(rotX(90))
-        standardcam_SE3_waymocam = SE3(
-            rotation=standardcam_R_waymocam, translation=np.zeros(3)
-        )
+        standardcam_SE3_waymocam = SE3(rotation=standardcam_R_waymocam, translation=np.zeros(3))
         egovehicle_SE3_waymocam = SE3(
             rotation=egovehicle_SE3_waymocam[:3, :3],
             translation=egovehicle_SE3_waymocam[:3, 3],
         )
-        standardcam_SE3_egovehicle = standardcam_SE3_waymocam.compose(
-            egovehicle_SE3_waymocam.inverse()
-        )
+        standardcam_SE3_egovehicle = standardcam_SE3_waymocam.compose(egovehicle_SE3_waymocam.inverse())
         egovehicle_SE3_standardcam = standardcam_SE3_egovehicle.inverse()
         egovehicle_q_camera = rotmat2quat(egovehicle_SE3_standardcam.rotation)
         x, y, z = egovehicle_SE3_standardcam.translation
@@ -282,9 +274,7 @@ def form_calibration_json(
     return calib_dict
 
 
-def dump_pose(
-    city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, parent_path: str
-) -> None:
+def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
     """Saves the SE3 transformation from city frame
         to egovehicle frame at a particular timestamp
 
@@ -306,9 +296,7 @@ def dump_pose(
     save_json_dict(json_fpath, pose_dict)
 
 
-def dump_point_cloud(
-    points: np.ndarray, timestamp: int, log_id: str, parent_path: str
-) -> None:
+def dump_point_cloud(points: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
     """Saves point cloud as .ply file extracted from Waymo's range images
 
     Args:
@@ -345,9 +333,7 @@ def dump_object_labels(
     argoverse_labels = []
     for label in labels:
         # We don't want signs, as that is not a category in Argoverse
-        if label.type != LABEL_TYPES.index("SIGN") and label.type != LABEL_TYPES.index(
-            "UNKNOWN"
-        ):
+        if label.type != LABEL_TYPES.index("SIGN") and label.type != LABEL_TYPES.index("UNKNOWN"):
             argoverse_labels.append(build_argo_label(label, timestamp, track_id_dict))
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
@@ -355,9 +341,7 @@ def dump_object_labels(
     save_json_dict(json_fpath, argoverse_labels)
 
 
-def build_argo_label(
-    label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict
-) -> Dict:
+def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict:
     """Builds a dictionary that represents an object detection in Argoverse format from a Waymo label
 
     Args:
@@ -411,9 +395,7 @@ if __name__ == "__main__":
         type=str2bool,
         help="whether to save images or not",
     )
-    parser.add_argument(
-        "--save-poses", default=True, type=str2bool, help="whether to save poses or not"
-    )
+    parser.add_argument("--save-poses", default=True, type=str2bool, help="whether to save poses or not")
     parser.add_argument(
         "--save-calibration",
         default=True,
