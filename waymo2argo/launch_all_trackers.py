@@ -2,11 +2,11 @@
 
 from waymo_data_splits import get_val_log_ids, get_test_log_ids
 
-from mseg_semantic.utils.subprocess_utils import run_command
+import mseg_semantic.utils.subprocess_utils as subprocess_utils
 
 
-def launch_all_trackers():
-    """ """
+def launch_all_trackers() -> None:
+    """Run a hyperparameter sweep over different 3d object tracking settings."""
     split = "test"  # 'val'
     dets_dataroot = "/w_o_d/detections"
 
@@ -26,7 +26,7 @@ def launch_all_trackers():
         cmd = f"sbatch -p cpu -c 5"
         cmd += f" run_tracker.sh {split} {dets_dataroot} {pose_dir} {tracks_dump_dir} {min_conf} {min_hits}"
         print(cmd)
-        run_command(cmd)
+        subprocess_utils.run_command(cmd)
 
 
 if __name__ == "__main__":
