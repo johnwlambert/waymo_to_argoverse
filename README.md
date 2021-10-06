@@ -1,5 +1,7 @@
 
-[![Build Status](https://travis-ci.com/johnwlambert/waymo_to_argoverse.svg?branch=master)](https://travis-ci.com/johnwlambert/waymo_to_argoverse)
+| Platform     | Build Status  |
+|:------------:| :-------------:|
+| Ubuntu 20.04.3 |  ![Linux CI](https://github.com/johnwlambert/waymo_to_argoverse/workflows/Python%20CI/badge.svg) |
 
 ## Waymo Open Dataset -> Argoverse Converter
 
