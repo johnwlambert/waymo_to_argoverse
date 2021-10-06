@@ -85,7 +85,19 @@ You will also need to download `argoverse`. You can use [this command](https://g
 - `create_submission_bin_file.py`: Given tracks in Argoverse format, convert them to Waymo submission format.
 
 ### Converting Waymo Raw Data to Argoverse Format
-To convert the Waymo dataset to Argoverse format, you will need to run `python waymo_raw_data_to_argoverse.py --waymo-dir /path-to-waymo-data/ --argo-dir /path-to-write-argo-data/`. After running this script, you will also need to run `python argoverse/utils/make_track_label_folders.py /path-to-write-argo-data/` to create the `track_labels_amodal` folder. There is more information about that [here](https://github.com/argoai/argoverse-api#optional-remake-the-object-oriented-label-folders).
+To convert the Waymo dataset to Argoverse format, you will need to run
+```bash
+python waymo_raw_data_to_argoverse.py --waymo-dir /path-to-waymo-data/ --argo-dir /path-to-write-argo-data/
+```
+e.g.
+```bash
+python waymo2argo/waymo_raw_data_to_argoverse.py --save-labels true --argo-dir waymo_data_in_argoverse_form_2021_10_06 --waymo-dir /srv/datasets/waymo_opendataset/waymo_open_dataset_v_1_0_0/training
+```
+After running this script, you will also need to run
+```bash
+python argoverse/utils/make_track_label_folders.py /path-to-write-argo-data/
+```
+to create the `track_labels_amodal` folder. There is more information about that [here](https://github.com/argoai/argoverse-api#optional-remake-the-object-oriented-label-folders).
 
 ### Usage Instructions for Waymo Leaderboard
 
