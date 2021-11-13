@@ -289,8 +289,8 @@ def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, pare
     R = city_SE3_egovehicle[:3, :3]
     assert np.allclose(city_SE3_egovehicle[3], np.array([0, 0, 0, 1]))
     q = rotmat2quat(R)
-    w, x, y, z = q
-    pose_dict = {"rotation": [w, x, y, z], "translation": [x, y, z]}
+    qw, qx, qy, qz = q
+    pose_dict = {"rotation": [qw, qx, qy, qz], "translation": [x, y, z]}
     json_fpath = f"{parent_path}/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
     save_json_dict(json_fpath, pose_dict)
