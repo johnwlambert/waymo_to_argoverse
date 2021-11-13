@@ -285,12 +285,12 @@ def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, pare
         log_id: Log ID that the reading belongs to
         parent_path: The directory that the converted data is written to
     """
-    x, y, z = city_SE3_egovehicle[:3, 3]
+    x1, y1, z1 = city_SE3_egovehicle[:3, 3]
     R = city_SE3_egovehicle[:3, :3]
     assert np.allclose(city_SE3_egovehicle[3], np.array([0, 0, 0, 1]))
     q = rotmat2quat(R)
     w, x, y, z = q
-    pose_dict = {"rotation": [w, x, y, z], "translation": [x, y, z]}
+    pose_dict = {"rotation": [w, x, y, z], "translation": [x1, y1, z1]}
     json_fpath = f"{parent_path}/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
     save_json_dict(json_fpath, pose_dict)
