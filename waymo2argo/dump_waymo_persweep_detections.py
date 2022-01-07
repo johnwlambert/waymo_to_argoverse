@@ -13,8 +13,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Union
 
-from argoverse.utils.se3 import SE3
-
 
 def round_to_micros(t_nanos, base=1000):
     """Round nanosecond timestamp to nearest microsecond timestamp."""
