@@ -2,6 +2,7 @@
 
 from typing import List
 
+
 def get_val_log_ids() -> List[str]:
     """ """
     val_log_ids = [
