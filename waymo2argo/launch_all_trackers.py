@@ -23,7 +23,7 @@ def launch_all_trackers() -> None:
     for log_id in log_ids:
         pose_dir = f"/w_o_d/{split.upper()}_RAW_DATA_SHARDED/sharded_pose_logs/{split}_{log_id}"
 
-        cmd = f"sbatch -p cpu -c 5"
+        cmd = "sbatch -p cpu -c 5"
         cmd += f" run_tracker.sh {split} {dets_dataroot} {pose_dir} {tracks_dump_dir} {min_conf} {min_hits}"
         print(cmd)
         subprocess_utils.run_command(cmd)
