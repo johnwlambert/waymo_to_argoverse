@@ -1,5 +1,7 @@
 """Unit tests on coordinate transform utilities."""
 
+import numpy as np
+
 import waymo2argo.transform_utils as transform_utils
 
 
