@@ -3,30 +3,27 @@
 import argparse
 import glob
 import imageio
-import itertools
 import json
-import math
 import numpy as np
 import os
 import pandas as pd
-import pdb
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-
+import argoverse.utils.json_utils as json_utils
 import cv2
 import google
 import tensorflow.compat.v1 as tf
 import waymo_open_dataset
-from argoverse.utils.json_utils import save_json_dict
 from argoverse.utils.se3 import SE3
 from pyntcloud import PyntCloud
 from scipy.spatial.transform import Rotation
 from waymo_open_dataset.utils import range_image_utils
-from waymo_open_dataset.utils import transform_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
+
+import waymo2argo.transform_utils as transform_utils
 
 tf.enable_eager_execution()
 
@@ -172,7 +169,7 @@ def main(args: argparse.Namespace) -> None:
                     log_calib_json = calib_json
                     calib_json_fpath = f"{ARGO_WRITE_DIR}/{log_id}/vehicle_calibration_info.json"
                     check_mkdir(str(Path(calib_json_fpath).parent))
-                    save_json_dict(calib_json_fpath, calib_json)
+                    json_utils.save_json_dict(calib_json_fpath, calib_json)
                 else:
                     assert calib_json == log_calib_json
 
@@ -286,7 +283,7 @@ def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, pare
     pose_dict = {"rotation": [qw, qx, qy, qz], "translation": [x, y, z]}
     json_fpath = f"{parent_path}/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
-    save_json_dict(json_fpath, pose_dict)
+    json_utils.save_json_dict(json_fpath, pose_dict)
 
 
 def dump_point_cloud(points: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
@@ -331,7 +328,7 @@ def dump_object_labels(
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
-    save_json_dict(json_fpath, argoverse_labels)
+    json_utils.save_json_dict(json_fpath, argoverse_labels)
 
 
 def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict:
