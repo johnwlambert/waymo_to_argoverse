@@ -6,19 +6,8 @@ Authors: John Lambert
 
 from typing import Tuple
 
-
 import numpy as np
 from scipy.spatial.transform import Rotation
-
-
-def test_quaternion3d_to_yaw() -> None:
-    """ """
-    for yaw in np.linspace(-np.pi, np.pi, 100000):
-        qx, qy, qz, qw = yaw_to_quaternion3d(yaw)
-        q_argo = np.array([qw, qx, qy, qz])
-        new_yaw = quaternion3d_to_yaw(q_argo)
-        if not np.allclose(yaw, new_yaw):
-            print(yaw, new_yaw)
 
 
 def se2_to_yaw(B_SE2_A) -> float:
@@ -90,13 +79,6 @@ def quat2rotmat(q: np.ndarray) -> np.ndarray:
     return Rotation.from_quat(q_scipy).as_dcm()
 
 
-def test_cycle() -> None:
-    """ """
-    R = np.eye(3)
-    q = rotmat2quat(R)
-    R_cycle = quat2rotmat(q)
-
-
 def rotMatZ_3D(yaw: float) -> np.ndarray:
     """
     Args:
@@ -111,24 +93,6 @@ def rotMatZ_3D(yaw: float) -> np.ndarray:
     return rot_z
 
 
-def test_transform() -> None:
-    """ """
-    yaw = 90
-    for yaw in np.random.randn(10) * 360:
-        R = rotMatZ_3D(yaw)
-        w, x, y, z = rotmat2quat(R)
-        qx, qy, qz, qw = yaw_to_quaternion3d(yaw)
-
-        print(w, qw)
-        print(x, qx)
-        print(y, qy)
-        print(z, qz)
-        assert np.allclose(w, qw)
-        assert np.allclose(x, qx)
-        assert np.allclose(y, qy)
-        assert np.allclose(z, qz)
-
-
 def rotX(deg: float) -> np.ndarray:
     """Compute 3x3 rotation matrix about the X-axis.
 
@@ -136,7 +100,7 @@ def rotX(deg: float) -> np.ndarray:
         deg: Euler angle in degrees
     """
     t = np.deg2rad(deg)
-    return Rotation.from_euler("x", t).as_dcm()
+    return Rotation.from_euler("x", t).as_matrix()
 
 
 def rotZ(deg: float) -> np.ndarray:
@@ -146,7 +110,7 @@ def rotZ(deg: float) -> np.ndarray:
         deg: Euler angle in degrees
     """
     t = np.deg2rad(deg)
-    return Rotation.from_euler("z", t).as_dcm()
+    return Rotation.from_euler("z", t).as_matrix()
 
 
 def rotY(deg: float) -> np.ndarray:
@@ -156,4 +120,4 @@ def rotY(deg: float) -> np.ndarray:
         deg: Euler angle in degrees
     """
     t = np.deg2rad(deg)
-    return Rotation.from_euler("y", t).as_dcm()
+    return Rotation.from_euler("y", t).as_matrix()
