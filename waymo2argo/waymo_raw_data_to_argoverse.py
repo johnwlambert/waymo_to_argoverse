@@ -331,7 +331,7 @@ def dump_object_labels(
     json_utils.save_json_dict(json_fpath, argoverse_labels)
 
 
-def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict:
+def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict[str,Any]:
     """Builds a dictionary that represents an object detection in Argoverse format from a Waymo label
 
     Args:
