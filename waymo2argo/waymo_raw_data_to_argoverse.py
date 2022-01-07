@@ -1,43 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
-import glob
-import imageio
-import itertools
-import json
-import math
-import numpy as np
-import os
-import pandas as pd
-import pdb
-import uuid
-from pathlib import Path
-from typing import Any, Dict, List, Union
-
-
-import cv2
-import google
-import tensorflow.compat.v1 as tf
-import waymo_open_dataset
-from argoverse.utils.json_utils import save_json_dict
-from argoverse.utils.se3 import SE3
-from pyntcloud import PyntCloud
-from scipy.spatial.transform import Rotation
-from waymo_open_dataset.utils import range_image_utils
-from waymo_open_dataset.utils import transform_utils
-from waymo_open_dataset.utils import frame_utils
-from waymo_open_dataset import dataset_pb2 as open_dataset
-
-tf.enable_eager_execution()
-
-from waymo2argo.transform_utils import (
-    rotX,
-    rotY,
-    rotmat2quat,
-    quat2rotmat,
-    yaw_to_quaternion3d,
-)
-
 """
 Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
 
@@ -47,6 +9,34 @@ https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_data
 See paper:
 https://arxiv.org/pdf/1912.04838.pdf
 """
+
+import argparse
+import glob
+import imageio
+import json
+import numpy as np
+import os
+import pandas as pd
+import uuid
+from pathlib import Path
+from typing import Any, Dict, List
+
+import argoverse.utils.json_utils as json_utils
+import cv2
+import google
+import tensorflow.compat.v1 as tf
+import waymo_open_dataset
+from argoverse.utils.se3 import SE3
+from pyntcloud import PyntCloud
+from scipy.spatial.transform import Rotation
+from waymo_open_dataset.utils import range_image_utils
+from waymo_open_dataset.utils import frame_utils
+from waymo_open_dataset import dataset_pb2 as open_dataset
+
+import waymo2argo.transform_utils as transform_utils
+
+tf.enable_eager_execution()
+
 
 # Mapping from Argo Camera names to Waymo Camera names
 # The indices correspond to Waymo's cameras
@@ -81,9 +71,7 @@ RING_IMAGE_SIZES = {
 
 
 def round_to_micros(t_nanos: int, base: int = 1000) -> int:
-    """
-    Round nanosecond timestamp to nearest microsecond timestamp
-    """
+    """Round nanosecond timestamp to nearest microsecond timestamp."""
     return base * round(t_nanos / base)
 
 
@@ -118,7 +106,7 @@ def get_log_ids_from_files(record_dir: str) -> Dict[str, str]:
 
 def main(args: argparse.Namespace) -> None:
     """Main script to convert Waymo object labels, LiDAR, images, pose, and calibration to
-    the Argoverse data format on disk
+    the Argoverse data format on disk.
     """
     TFRECORD_DIR = args.waymo_dir
     ARGO_WRITE_DIR = args.argo_dir
@@ -179,7 +167,7 @@ def main(args: argparse.Namespace) -> None:
                     log_calib_json = calib_json
                     calib_json_fpath = f"{ARGO_WRITE_DIR}/{log_id}/vehicle_calibration_info.json"
                     check_mkdir(str(Path(calib_json_fpath).parent))
-                    save_json_dict(calib_json_fpath, calib_json)
+                    json_utils.save_json_dict(calib_json_fpath, calib_json)
                 else:
                     assert calib_json == log_calib_json
 
@@ -218,7 +206,7 @@ def undistort_image(
     calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
     camera_name: int,
 ) -> np.ndarray:
-    """Undistort the image from the Waymo dataset given camera calibration data"""
+    """Undistort the image from the Waymo dataset given camera calibration data."""
     for camera_calib in calib_data:
         if camera_calib.name == camera_name:
             f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
@@ -231,8 +219,9 @@ def undistort_image(
 
 def form_calibration_json(
     calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
-) -> Dict:
-    """
+) -> Dict[str, Any]:
+    """Create a JSON file per log containing calibration information, in the Argoverse format.
+
     Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
             rotation parameterized as quaternion.
     Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
@@ -243,7 +232,7 @@ def form_calibration_json(
         # They provide "Camera frame to vehicle frame."
         # https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
         egovehicle_SE3_waymocam = np.array(camera_calib.extrinsic.transform).reshape(4, 4)
-        standardcam_R_waymocam = rotY(-90).dot(rotX(90))
+        standardcam_R_waymocam = transform_utils.rotY(-90) @ transform_utils.rotX(90)
         standardcam_SE3_waymocam = SE3(rotation=standardcam_R_waymocam, translation=np.zeros(3))
         egovehicle_SE3_waymocam = SE3(
             rotation=egovehicle_SE3_waymocam[:3, :3],
@@ -251,7 +240,7 @@ def form_calibration_json(
         )
         standardcam_SE3_egovehicle = standardcam_SE3_waymocam.compose(egovehicle_SE3_waymocam.inverse())
         egovehicle_SE3_standardcam = standardcam_SE3_egovehicle.inverse()
-        egovehicle_q_camera = rotmat2quat(egovehicle_SE3_standardcam.rotation)
+        egovehicle_q_camera = transform_utils.rotmat2quat(egovehicle_SE3_standardcam.rotation)
         x, y, z = egovehicle_SE3_standardcam.translation
         qw, qx, qy, qz = egovehicle_q_camera
         f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
@@ -275,8 +264,9 @@ def form_calibration_json(
 
 
 def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
-    """Saves the SE3 transformation from city frame
-        to egovehicle frame at a particular timestamp
+    """Saves the pose of the egovehicle in the city coordinate frame at a particular timestamp.
+
+    The SE(3) transformation is stored as a quaternion and length-3 translation vector.
 
     Args:
         city_SE3_egovehicle: A (4,4) numpy array representing the
@@ -288,12 +278,12 @@ def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, pare
     x, y, z = city_SE3_egovehicle[:3, 3]
     R = city_SE3_egovehicle[:3, :3]
     assert np.allclose(city_SE3_egovehicle[3], np.array([0, 0, 0, 1]))
-    q = rotmat2quat(R)
+    q = transform_utils.rotmat2quat(R)
     qw, qx, qy, qz = q
     pose_dict = {"rotation": [qw, qx, qy, qz], "translation": [x, y, z]}
     json_fpath = f"{parent_path}/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
-    save_json_dict(json_fpath, pose_dict)
+    json_utils.save_json_dict(json_fpath, pose_dict)
 
 
 def dump_point_cloud(points: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
@@ -319,7 +309,7 @@ def dump_object_labels(
     timestamp: int,
     log_id: str,
     parent_path: str,
-    track_id_dict: Dict,
+    track_id_dict: Dict[str, str],
 ) -> None:
     """Saves object labels from Waymo dataset as json files
 
@@ -338,16 +328,19 @@ def dump_object_labels(
     json_fpath = f"{parent_path}/{log_id}/per_sweep_annotations_amodal/"
     json_fpath += f"tracked_object_labels_{timestamp}.json"
     check_mkdir(str(Path(json_fpath).parent))
-    save_json_dict(json_fpath, argoverse_labels)
+    json_utils.save_json_dict(json_fpath, argoverse_labels)
 
 
-def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict:
+def build_argo_label(
+    label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict[str, str]
+) -> Dict[str, Any]:
     """Builds a dictionary that represents an object detection in Argoverse format from a Waymo label
 
     Args:
         labels: A Waymo label
         timestamp: Timestamp in nanoseconds when the lidar reading occurred
         track_id_dict: Dictionary to store object ID to track ID mappings
+
     Returns:
         label_dict: A dictionary representing the object label in Argoverse format
     """
@@ -360,7 +353,7 @@ def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, 
     label_dict["width"] = label.box.width
     label_dict["height"] = label.box.height
     label_dict["rotation"] = {}
-    qx, qy, qz, qw = yaw_to_quaternion3d(label.box.heading)
+    qx, qy, qz, qw = transform_utils.yaw_to_quaternion3d(label.box.heading)
     label_dict["rotation"]["x"] = qx
     label_dict["rotation"]["y"] = qy
     label_dict["rotation"]["z"] = qz
