@@ -1,35 +1,23 @@
-from collections import defaultdict
-import glob
-import json
-import math
-import numpy as np
-import os
-from pathlib import Path
-import pdb
-from typing import Any, Dict, Union, Tuple
-
-from scipy.spatial.transform import Rotation
-from argoverse.utils.se3 import SE3
-
-from transform_utils import (
-    yaw_to_quaternion3d,
-    rotmat2quat,
-    quat2rotmat,
-)
-
 """
 Given sharded JSON files containing labeled objects or detections in random order, 
 accumulate objects according to frame, at each nanosecond timestamp, and 
 write them to disk in JSON again.
 
-Also, write corresponding dummy PLY files for each frame.
+Also, writes corresponding dummy PLY files for each frame.
 """
+
+import glob
+import json
+import os
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, Union
+
+from argoverse.utils.se3 import SE3
 
 
 def round_to_micros(t_nanos, base=1000):
-    """
-    Round nanosecond timestamp to nearest microsecond timestamp
-    """
+    """Round nanosecond timestamp to nearest microsecond timestamp."""
     return base * round(t_nanos / base)
 
 
@@ -121,7 +109,7 @@ def main(verbose=False):
 
             if verbose:
                 print("Shared timestamps:")
-                print(timestamps_counts)
+                #print(timestamps_counts)
 
 
 if __name__ == "__main__":
