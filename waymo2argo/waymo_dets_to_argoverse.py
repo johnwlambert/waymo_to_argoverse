@@ -1,25 +1,5 @@
 #!/usr/bin/env python3
 
-import itertools
-import json
-import math
-import os
-from pathlib import Path
-from typing import Any, Dict, Union, Tuple
-
-import numpy as np
-import tensorflow as tf
-
-tf.compat.v1.enable_eager_execution()
-
-from waymo_open_dataset.utils import range_image_utils
-from waymo_open_dataset.utils import transform_utils
-from waymo_open_dataset.utils import frame_utils
-from waymo_open_dataset import dataset_pb2 as open_dataset
-from waymo_open_dataset.protos import metrics_pb2
-
-import transform_utils as transform_utils
-
 """
 Convert provided Waymo detections to Argoverse format.
 
@@ -43,6 +23,18 @@ or
 from google.colab import drive
 drive.mount('/content/gdrive')
 """
+
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, Union
+
+import tensorflow as tf
+
+tf.compat.v1.enable_eager_execution()
+from waymo_open_dataset.protos import metrics_pb2
+
+import waymo2argo.transform_utils as transform_utils
 
 
 def round_to_micros(t_nanos: int, base=1000) -> int:
@@ -154,9 +146,9 @@ def main() -> None:
             # json_fpath = os.path.join(label_dir, json_fname)
 
             # if Path(json_fpath).exists():
-            # 	# accumulate tracks of another class together
-            # 	prev_tracked_labels = read_json_file(json_fpath)
-            # 	tracked_labels.extend(prev_tracked_labels)
+            #   # accumulate tracks of another class together
+            #   prev_tracked_labels = read_json_file(json_fpath)
+            #   tracked_labels.extend(prev_tracked_labels)
 
         # ensure sharding correct
         print(f"Shard sz, {SHARD_SZ}, num_objs={gt_num_objs}")
@@ -166,6 +158,6 @@ def main() -> None:
 
         save_json_dict(json_fpath, tracked_labels)
 
+
 if __name__ == "__main__":
     main()
-

@@ -4,22 +4,15 @@ import glob
 import json
 import numpy as np
 import os
-from pathlib import Path
-import pdb
-from scipy.spatial.transform import Rotation
 import time
-from typing import Any, Dict, Union, Tuple
+from pathlib import Path
+from typing import Any, Union
 
-from waymo_open_dataset import dataset_pb2
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import metrics_pb2
 
-from waymo_data_splits import get_val_log_ids, get_test_log_ids
-from transform_utils import (
-    se2_to_yaw,
-    quaternion3d_to_yaw,
-    yaw_to_quaternion3d,
-)
+import waymo2argo.transform_utils as transform_utils
+from waymo2argo.waymo_data_splits import get_val_log_ids, get_test_log_ids
 
 """
 Given tracks in Argoverse format, convert them to Waymo submission format.
@@ -45,7 +38,7 @@ def read_json_file(fpath: Union[str, "os.PathLike[str]"]) -> Any:
         return json.load(f)
 
 
-def create_submission(min_conf: float, min_hits: int):
+def create_submission(min_conf: float, min_hits: int) -> None:
     """Creates a prediction objects file."""
     objects = metrics_pb2.Objects()
 
@@ -85,7 +78,7 @@ def create_submission(min_conf: float, min_hits: int):
     f.close()
 
 
-def create_object_description(log_id, timestamp_ns, obj_json):
+def create_object_description(log_id: str, timestamp_ns: int, obj_json) -> metrics_pb2.Object:
     """ """
     o = metrics_pb2.Object()
     # The following 3 fields are used to uniquely identify a frame a prediction
@@ -106,7 +99,7 @@ def create_object_description(log_id, timestamp_ns, obj_json):
         obj_json["rotation"]["w"],
     )
     q_argo = np.array([qw, qx, qy, qz])
-    yaw = quaternion3d_to_yaw(q_argo)
+    yaw = transform_utils.quaternion3d_to_yaw(q_argo)
 
     # Populating box and score.
     box = label_pb2.Label.Box()
