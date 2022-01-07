@@ -13,7 +13,6 @@ https://arxiv.org/pdf/1912.04838.pdf
 import argparse
 import glob
 import imageio
-import json
 import numpy as np
 import os
 import pandas as pd
@@ -28,7 +27,6 @@ import tensorflow.compat.v1 as tf
 import waymo_open_dataset
 from argoverse.utils.se3 import SE3
 from pyntcloud import PyntCloud
-from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
 
@@ -310,7 +308,7 @@ def dump_object_labels(
     parent_path: str,
     track_id_dict: Dict[str, str],
 ) -> None:
-    """Saves object labels from Waymo dataset as json files
+    """Saves object labels from Waymo dataset as json files.
 
     Args:
         labels: A list of Waymo labels
