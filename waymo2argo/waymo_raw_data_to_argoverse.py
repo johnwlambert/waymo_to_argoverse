@@ -30,13 +30,6 @@ from waymo_open_dataset import dataset_pb2 as open_dataset
 
 tf.enable_eager_execution()
 
-from waymo2argo.transform_utils import (
-    rotX,
-    rotY,
-    rotmat2quat,
-    quat2rotmat,
-    yaw_to_quaternion3d,
-)
 
 """
 Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
@@ -243,7 +236,7 @@ def form_calibration_json(
         # They provide "Camera frame to vehicle frame."
         # https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
         egovehicle_SE3_waymocam = np.array(camera_calib.extrinsic.transform).reshape(4, 4)
-        standardcam_R_waymocam = rotY(-90).dot(rotX(90))
+        standardcam_R_waymocam = transform_utils.rotY(-90) @ transform_utils.rotX(90)
         standardcam_SE3_waymocam = SE3(rotation=standardcam_R_waymocam, translation=np.zeros(3))
         egovehicle_SE3_waymocam = SE3(
             rotation=egovehicle_SE3_waymocam[:3, :3],
@@ -251,7 +244,7 @@ def form_calibration_json(
         )
         standardcam_SE3_egovehicle = standardcam_SE3_waymocam.compose(egovehicle_SE3_waymocam.inverse())
         egovehicle_SE3_standardcam = standardcam_SE3_egovehicle.inverse()
-        egovehicle_q_camera = rotmat2quat(egovehicle_SE3_standardcam.rotation)
+        egovehicle_q_camera = transform_utils.rotmat2quat(egovehicle_SE3_standardcam.rotation)
         x, y, z = egovehicle_SE3_standardcam.translation
         qw, qx, qy, qz = egovehicle_q_camera
         f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
@@ -288,7 +281,7 @@ def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, pare
     x, y, z = city_SE3_egovehicle[:3, 3]
     R = city_SE3_egovehicle[:3, :3]
     assert np.allclose(city_SE3_egovehicle[3], np.array([0, 0, 0, 1]))
-    q = rotmat2quat(R)
+    q = transform_utils.rotmat2quat(R)
     qw, qx, qy, qz = q
     pose_dict = {"rotation": [qw, qx, qy, qz], "translation": [x, y, z]}
     json_fpath = f"{parent_path}/{log_id}/poses/city_SE3_egovehicle_{timestamp}.json"
@@ -360,7 +353,7 @@ def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, 
     label_dict["width"] = label.box.width
     label_dict["height"] = label.box.height
     label_dict["rotation"] = {}
-    qx, qy, qz, qw = yaw_to_quaternion3d(label.box.heading)
+    qx, qy, qz, qw = transform_utils.yaw_to_quaternion3d(label.box.heading)
     label_dict["rotation"]["x"] = qx
     label_dict["rotation"]["y"] = qy
     label_dict["rotation"]["z"] = qz
