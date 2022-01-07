@@ -9,7 +9,7 @@ def test_transform() -> None:
     """ """
     yaw = 90
     for yaw in np.random.randn(10) * 360:
-        R = rotMatZ_3D(yaw)
+        R = transform_utils.rotMatZ_3D(yaw)
         w, x, y, z = transform_utils.rotmat2quat(R)
         qx, qy, qz, qw = transform_utils.yaw_to_quaternion3d(yaw)
 
