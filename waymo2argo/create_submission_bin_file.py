@@ -11,8 +11,8 @@ from typing import Any, Union
 from waymo_open_dataset import label_pb2
 from waymo_open_dataset.protos import metrics_pb2
 
-from waymo_data_splits import get_val_log_ids, get_test_log_ids
 import waymo2argo.transform_utils as transform_utils
+from waymo2argo.waymo_data_splits import get_val_log_ids, get_test_log_ids
 
 """
 Given tracks in Argoverse format, convert them to Waymo submission format.
