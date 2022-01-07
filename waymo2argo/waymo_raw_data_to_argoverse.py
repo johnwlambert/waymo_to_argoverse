@@ -28,7 +28,6 @@ import tensorflow.compat.v1 as tf
 import waymo_open_dataset
 from argoverse.utils.se3 import SE3
 from pyntcloud import PyntCloud
-from scipy.spatial.transform import Rotation
 from waymo_open_dataset.utils import range_image_utils
 from waymo_open_dataset.utils import frame_utils
 from waymo_open_dataset import dataset_pb2 as open_dataset
@@ -223,8 +222,8 @@ def form_calibration_json(
     """Create a JSON file per log containing calibration information, in the Argoverse format.
 
     Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
-            rotation parameterized as quaternion.
-    Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
+        rotation parameterized as a quaternion.
+    Waymo provides the same SE(3) transformation, but with rotation parameterized as a 3x3 matrix.
     """
     calib_dict = {"camera_data_": []}
     for camera_calib in calib_data:
