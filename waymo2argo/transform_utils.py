@@ -34,7 +34,7 @@ def quaternion3d_to_yaw(q: np.ndarray) -> float:
     """
     w, x, y, z = q  # in argo format
     q_scipy = x, y, z, w
-    R = Rotation.from_quat(q_scipy).as_dcm()
+    R = Rotation.from_quat(q_scipy).as_matrix()
     # tan (yaw) = s / c
     yaw = np.arctan2(R[1, 0], R[0, 0])
     return yaw
@@ -54,7 +54,7 @@ def yaw_to_quaternion3d(yaw: float) -> Tuple[float, float, float, float]:
 
 def rotmat2quat(R: np.ndarray) -> np.ndarray:
     """ """
-    q_scipy = Rotation.from_dcm(R).as_quat()
+    q_scipy = Rotation.from_matrix(R).as_quat()
     x, y, z, w = q_scipy
     q_argo = w, x, y, z
     return q_argo
@@ -76,7 +76,7 @@ def quat2rotmat(q: np.ndarray) -> np.ndarray:
     assert np.isclose(np.linalg.norm(q), 1.0, atol=1e-12)
     w, x, y, z = q
     q_scipy = np.array([x, y, z, w])
-    return Rotation.from_quat(q_scipy).as_dcm()
+    return Rotation.from_quat(q_scipy).as_matrix()
 
 
 def rotMatZ_3D(yaw: float) -> np.ndarray:
