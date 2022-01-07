@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
 
+"""
+Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
+
+See the Frame structure here:
+https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
+
+See paper:
+https://arxiv.org/pdf/1912.04838.pdf
+"""
+
 import argparse
 import glob
 import imageio
@@ -9,7 +19,7 @@ import os
 import pandas as pd
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 import argoverse.utils.json_utils as json_utils
 import cv2
@@ -27,16 +37,6 @@ import waymo2argo.transform_utils as transform_utils
 
 tf.enable_eager_execution()
 
-
-"""
-Extract poses, images, and camera calibration from raw Waymo Open Dataset TFRecords.
-
-See the Frame structure here:
-https://github.com/waymo-research/waymo-open-dataset/blob/master/waymo_open_dataset/dataset.proto
-
-See paper:
-https://arxiv.org/pdf/1912.04838.pdf
-"""
 
 # Mapping from Argo Camera names to Waymo Camera names
 # The indices correspond to Waymo's cameras
@@ -71,9 +71,7 @@ RING_IMAGE_SIZES = {
 
 
 def round_to_micros(t_nanos: int, base: int = 1000) -> int:
-    """
-    Round nanosecond timestamp to nearest microsecond timestamp
-    """
+    """Round nanosecond timestamp to nearest microsecond timestamp."""
     return base * round(t_nanos / base)
 
 
@@ -108,7 +106,7 @@ def get_log_ids_from_files(record_dir: str) -> Dict[str, str]:
 
 def main(args: argparse.Namespace) -> None:
     """Main script to convert Waymo object labels, LiDAR, images, pose, and calibration to
-    the Argoverse data format on disk
+    the Argoverse data format on disk.
     """
     TFRECORD_DIR = args.waymo_dir
     ARGO_WRITE_DIR = args.argo_dir
@@ -208,7 +206,7 @@ def undistort_image(
     calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
     camera_name: int,
 ) -> np.ndarray:
-    """Undistort the image from the Waymo dataset given camera calibration data"""
+    """Undistort the image from the Waymo dataset given camera calibration data."""
     for camera_calib in calib_data:
         if camera_calib.name == camera_name:
             f_u, f_v, c_u, c_v, k1, k2, p1, p2, k3 = camera_calib.intrinsic
@@ -221,8 +219,9 @@ def undistort_image(
 
 def form_calibration_json(
     calib_data: google.protobuf.pyext._message.RepeatedCompositeContainer,
-) -> Dict:
-    """
+) -> Dict[str, Any]:
+    """Create a JSON file per log containing calibration information, in the Argoverse format.
+
     Argoverse expects to receive "egovehicle_T_camera", i.e. from camera -> egovehicle, with
             rotation parameterized as quaternion.
     Waymo provides the same SE(3) transformation, but with rotation parmaeterized as 3x3 matrix
@@ -265,8 +264,9 @@ def form_calibration_json(
 
 
 def dump_pose(city_SE3_egovehicle: np.ndarray, timestamp: int, log_id: str, parent_path: str) -> None:
-    """Saves the SE3 transformation from city frame
-        to egovehicle frame at a particular timestamp
+    """Saves the pose of the egovehicle in the city coordinate frame at a particular timestamp.
+
+    The SE(3) transformation is stored as a quaternion and length-3 translation vector.
 
     Args:
         city_SE3_egovehicle: A (4,4) numpy array representing the
@@ -309,7 +309,7 @@ def dump_object_labels(
     timestamp: int,
     log_id: str,
     parent_path: str,
-    track_id_dict: Dict,
+    track_id_dict: Dict[str, str],
 ) -> None:
     """Saves object labels from Waymo dataset as json files
 
@@ -331,13 +331,16 @@ def dump_object_labels(
     json_utils.save_json_dict(json_fpath, argoverse_labels)
 
 
-def build_argo_label(label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict) -> Dict[str,Any]:
+def build_argo_label(
+    label: waymo_open_dataset.label_pb2.Label, timestamp: int, track_id_dict: Dict[str, str]
+) -> Dict[str, Any]:
     """Builds a dictionary that represents an object detection in Argoverse format from a Waymo label
 
     Args:
         labels: A Waymo label
         timestamp: Timestamp in nanoseconds when the lidar reading occurred
         track_id_dict: Dictionary to store object ID to track ID mappings
+
     Returns:
         label_dict: A dictionary representing the object label in Argoverse format
     """
