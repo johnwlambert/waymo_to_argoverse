@@ -24,11 +24,24 @@ def test_transform() -> None:
 
         
 def test_cycle() -> None:
-    """ """
+    """Ensure rotation matrix -> quaternion -> rotation matrix conversion yields identity."""
     R = np.eye(3)
     q = transform_utils.rotmat2quat(R)
     R_cycle = transform_utils.quat2rotmat(q)
     assert np.allclose(R, R_cycle)
+
+
+def test_cycle_brute_force() -> None:
+    """Ensure rotation matrix -> quaternion -> rotation matrix conversion yields identity for many random inputs."""
+    num_iters = 10000
+    for _ in range(num_iters):
+        # sample from unit sphere
+        q = np.random.randn(4)
+        q /= np.linalg.norm(q)
+        R = transform_utils.quat2rotmat(q)
+        q_cycle = transform_utils.rotmat2quat(R)
+        R_cycle = transform_utils.quat2rotmat(q_cycle)
+        assert np.allclose(R, R_cycle)
 
 
 def test_quaternion3d_to_yaw() -> None:
